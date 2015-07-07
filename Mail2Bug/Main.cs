@@ -14,6 +14,8 @@ using Mail2Bug.Email.EWS;
 
 namespace Mail2Bug
 {
+    using Mail2Bug.WorkItemManagement;
+
     class MainApp
     {
         /// <summary>
@@ -22,6 +24,14 @@ namespace Mail2Bug
         [STAThread]
         public static void Main(string[] args) // string[] args
         {
+            IcmDataClient client = new IcmDataClient();
+            client.Go();
+
+            IWorkItemManager workItemManager = new IcmWorkItemManagment();
+
+
+            return;
+
             if(args.Contains("-break"))
             {
                 Logger.Info("Breaking into debugger");
