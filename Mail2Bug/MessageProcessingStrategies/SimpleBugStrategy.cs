@@ -114,6 +114,7 @@ namespace Mail2Bug.MessageProcessingStrategies
 
             var resolver = new SpecialValueResolver(message, _workItemManager.GetNameResolver());
             var workItemUpdates = new Dictionary<string, string> { { "Changed By", resolver.Sender } };
+            workItemUpdates.Add("SenderAlias", message.SenderAlias);
 
             if (_config.WorkItemSettings.ApplyOverridesDuringUpdate)
             {

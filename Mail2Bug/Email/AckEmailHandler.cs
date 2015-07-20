@@ -41,8 +41,17 @@ namespace Mail2Bug.Email
         {
             var bodyBuilder = new StringBuilder();
             bodyBuilder.Append(_config.EmailSettings.GetReplyTemplate());
-            bodyBuilder.Replace("[BUGID]", workItemId);
-            bodyBuilder.Replace("[TFSCollectionUri]", _config.TfsServerConfig.CollectionUri);
+
+            if ( _config.TfsServerConfig!=null)
+             {
+                bodyBuilder.Replace("[BUGID]", workItemId);
+                bodyBuilder.Replace("[TFSCollectionUri]", _config.TfsServerConfig.CollectionUri);
+             }
+            if ( _config.IcmServerConfig!=null)
+              {
+                bodyBuilder.Replace("[IncidentId]", workItemId);
+                bodyBuilder.Replace("[TFSCollectionUri]", _config.IcmServerConfig.IcmUri);
+              }
             return bodyBuilder.ToString();
         }
 

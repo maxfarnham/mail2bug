@@ -24,14 +24,7 @@ namespace Mail2Bug
         [STAThread]
         public static void Main(string[] args) // string[] args
         {
-            IcmDataClient client = new IcmDataClient();
-            client.Go();
-
-            IWorkItemManager workItemManager = new IcmWorkItemManagment();
-
-
-            return;
-
+          
             if(args.Contains("-break"))
             {
                 Logger.Info("Breaking into debugger");
@@ -41,10 +34,18 @@ namespace Mail2Bug
             try
             {
                 string configPath = ConfigurationManager.AppSettings["ConfigPath"];
-                string configsFilePattern = ConfigurationManager.AppSettings["ConfigFilePattern"];
-
-                var configFiles = Directory.GetFiles(configPath, configsFilePattern);
-                if (configFiles.Length == 0)
+                string [] configsFilePattern = ConfigurationManager.AppSettings["ConfigFilePattern"].Split(',');
+                List<string> configFiles = new List<string>();
+                foreach ( string configpat in configsFilePattern)
+                {
+                      var temp = Directory.GetFiles(configPath, configpat);
+                      foreach ( string st in temp)
+                       {
+                         configFiles.Add(st);
+                       }
+                }
+                
+                if (configFiles.Count == 0)
                 {
                     Logger.ErrorFormat("No configs found (path='{0}', pattern='{1}')", configPath, configsFilePattern);
                     throw new ConfigurationErrorsException("No configs found");
@@ -103,7 +104,7 @@ namespace Mail2Bug
                     }
                 }
             }
-            catch (Exception exception)
+             catch (Exception exception)
             {
                 Logger.ErrorFormat("Exception caught in main - aborting. {0}", exception);
             }
@@ -145,7 +146,7 @@ namespace Mail2Bug
             // because then it would be called by each instance, which is exactly what we want to avoid.
             // The alternatives are:
             // * Expose a function to process inboxes and call it at the beginning of each iteration (which is the
-            //   solution implemented her)
+            //   solution implemented here)
             // * Add logic to RecipientsMailboxManagerRouter to detect wheter a call to ProcessInbox is needed or 
             //   not based on whether new messages were received or similar logic. I initially implemented this logic
             //   but then decided it's adding too much complexity compared to the small benefit of a somewhat cleaner

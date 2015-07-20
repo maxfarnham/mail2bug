@@ -1,0 +1,277 @@
+﻿<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx">
+  <edmx:DataServices m:DataServiceVersion="3.0" m:MaxDataServiceVersion="3.0" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata">
+    <Schema Namespace="Microsoft.AzureAd.Icm.Types" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+      <EntityType Name="Incident">
+        <Key>
+          <PropertyRef Name="Id" />
+        </Key>
+        <Property Name="Id" Type="Edm.Int64" Nullable="false" />
+        <Property Name="Severity" Type="Edm.Int32" />
+        <Property Name="Status" Type="Edm.String" />
+        <Property Name="CreateDate" Type="Edm.DateTime" />
+        <Property Name="ModifiedDate" Type="Edm.DateTime" />
+        <Property Name="Source" Type="Microsoft.AzureAd.Icm.Types.AlertSourceInfo" />
+        <Property Name="CorrelationId" Type="Edm.String" />
+        <Property Name="RoutingId" Type="Edm.String" />
+        <Property Name="RaisingLocation" Type="Microsoft.AzureAd.Icm.Types.IncidentLocation" />
+        <Property Name="IncidentLocation" Type="Microsoft.AzureAd.Icm.Types.IncidentLocation" />
+        <Property Name="ParentIncidentId" Type="Edm.Int64" />
+        <Property Name="RelatedLinksCount" Type="Edm.Int64" />
+        <Property Name="ExternalLinksCount" Type="Edm.Int64" />
+        <Property Name="LastCorrelationDate" Type="Edm.DateTime" />
+        <Property Name="HitCount" Type="Edm.Int64" />
+        <Property Name="ChildCount" Type="Edm.Int64" />
+        <Property Name="Title" Type="Edm.String" />
+        <Property Name="ReproSteps" Type="Edm.String" />
+        <Property Name="OwningContactAlias" Type="Edm.String" />
+        <Property Name="OwningTenantId" Type="Edm.String" />
+        <Property Name="OwningTeamId" Type="Edm.String" />
+        <Property Name="MitigationData" Type="Microsoft.AzureAd.Icm.Types.MitigationData" />
+        <Property Name="ResolutionData" Type="Microsoft.AzureAd.Icm.Types.ResolutionData" />
+        <Property Name="IsCustomerImpacting" Type="Edm.Boolean" />
+        <Property Name="IsNoise" Type="Edm.Boolean" />
+        <Property Name="IsSecurityRisk" Type="Edm.Boolean" />
+        <Property Name="TsgId" Type="Edm.String" />
+        <Property Name="CustomerName" Type="Edm.String" />
+        <Property Name="CommitDate" Type="Edm.DateTime" />
+        <Property Name="Keywords" Type="Edm.String" />
+        <Property Name="Component" Type="Edm.String" />
+        <Property Name="IncidentType" Type="Edm.String" />
+        <Property Name="ImpactStartDate" Type="Edm.DateTime" />
+        <Property Name="OriginatingTenantId" Type="Edm.String" />
+        <Property Name="SubscriptionId" Type="Edm.String" />
+        <Property Name="SupportTicketId" Type="Edm.String" />
+        <Property Name="MonitorId" Type="Edm.String" />
+        <Property Name="IncidentSubType" Type="Edm.String" />
+        <Property Name="HowFixed" Type="Edm.String" />
+        <Property Name="TsgOutput" Type="Edm.String" />
+        <Property Name="SourceOrigin" Type="Edm.String" />
+        <Property Name="ResponsibleTenantId" Type="Edm.String" />
+        <Property Name="ImpactedServicesIds" Type="Collection(Edm.String)" />
+        <Property Name="ImpactedTeamsPublicIds" Type="Collection(Edm.String)" />
+        <Property Name="ImpactedComponents" Type="Collection(Microsoft.AzureAd.Icm.Types.IncidentImpactedComponent)" Nullable="false" />
+        <Property Name="NewDescriptionEntry" Type="Microsoft.AzureAd.Icm.Types.NewDescriptionEntry" />
+        <Property Name="AcknowledgementData" Type="Microsoft.AzureAd.Icm.Types.AcknowledgementData" />
+        <Property Name="ReactivationData" Type="Microsoft.AzureAd.Icm.Types.ReactivationData" />
+        <Property Name="CustomFieldGroups" Type="Collection(Microsoft.AzureAd.Icm.Types.Api.CustomFieldGroup)" Nullable="false" />
+        <Property Name="ExternalIncidents" Type="Collection(Microsoft.AzureAd.Icm.Types.ExternalAssociationTarget)" Nullable="false" />
+        <NavigationProperty Name="DescriptionEntries" Relationship="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_DescriptionEntries_Microsoft_AzureAd_Icm_Types_DescriptionEntry_DescriptionEntriesPartner" ToRole="DescriptionEntries" FromRole="DescriptionEntriesPartner" />
+        <NavigationProperty Name="RootCause" Relationship="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_RootCause_Microsoft_AzureAd_Icm_Types_RootCauseEntity_RootCausePartner" ToRole="RootCause" FromRole="RootCausePartner" />
+        <NavigationProperty Name="ParentIncident" Relationship="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_ParentIncident_Microsoft_AzureAd_Icm_Types_Incident_ParentIncidentPartner" ToRole="ParentIncident" FromRole="ParentIncidentPartner" />
+        <NavigationProperty Name="ChildIncidents" Relationship="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_ChildIncidents_Microsoft_AzureAd_Icm_Types_Incident_ChildIncidentsPartner" ToRole="ChildIncidents" FromRole="ChildIncidentsPartner" />
+        <NavigationProperty Name="RelatedIncidents" Relationship="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_RelatedIncidents_Microsoft_AzureAd_Icm_Types_Incident_RelatedIncidentsPartner" ToRole="RelatedIncidents" FromRole="RelatedIncidentsPartner" />
+      </EntityType>
+      <EntityType Name="DescriptionEntry">
+        <Key>
+          <PropertyRef Name="DescriptionEntryId" />
+        </Key>
+        <Property Name="DescriptionEntryId" Type="Edm.Int64" Nullable="false" />
+        <Property Name="ChangedBy" Type="Edm.String" />
+        <Property Name="SubmittedBy" Type="Edm.String" />
+        <Property Name="Cause" Type="Edm.String" />
+        <Property Name="Date" Type="Edm.DateTime" />
+        <Property Name="SubmitDate" Type="Edm.DateTime" />
+        <Property Name="Text" Type="Edm.String" />
+        <Property Name="RenderType" Type="Edm.String" />
+      </EntityType>
+      <EntityType Name="RootCauseEntity">
+        <Key>
+          <PropertyRef Name="RootCauseId" />
+        </Key>
+        <Property Name="RootCauseId" Type="Edm.Int64" Nullable="false" />
+        <Property Name="Category" Type="Edm.String" />
+        <Property Name="Description" Type="Edm.String" />
+        <Property Name="Title" Type="Edm.String" />
+        <Property Name="CreatedDate" Type="Edm.DateTime" />
+        <Property Name="ModifiedDate" Type="Edm.DateTime" />
+        <Property Name="LinkedIncidentDate" Type="Edm.DateTime" />
+        <Property Name="Bugs" Type="Collection(Microsoft.AzureAd.Icm.Types.RootCauseBugEntity)" Nullable="false" />
+        <Property Name="OwningTenantId" Type="Edm.Int64" />
+      </EntityType>
+      <ComplexType Name="RootCauseBugEntity">
+        <Property Name="BugType" Type="Edm.String" />
+        <Property Name="BugSource" Type="Edm.String" />
+        <Property Name="BugId" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="ExternalAssociationTarget">
+        <Property Name="ItemId" Type="Edm.Int64" Nullable="false" />
+        <Property Name="ItemSource" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="IncidentAcknowledgeParameters">
+        <Property Name="AcknowledgeContactAlias" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="IncidentTransferParameters">
+        <Property Name="OwningTenantPublicId" Type="Edm.Guid" Nullable="false" />
+        <Property Name="OwningTeamPublicId" Type="Edm.String" />
+        <Property Name="Description" Type="Microsoft.AzureAd.Icm.Types.NewDescriptionEntry" />
+      </ComplexType>
+      <ComplexType Name="IncidentMitigateParameters">
+        <Property Name="IsCustomerImpacting" Type="Edm.Boolean" Nullable="false" />
+        <Property Name="IsNoise" Type="Edm.Boolean" Nullable="false" />
+        <Property Name="Mitigation" Type="Edm.String" />
+        <Property Name="MitigateContactAlias" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="IncidentResolveParameters">
+        <Property Name="IsCustomerImpacting" Type="Edm.Boolean" Nullable="false" />
+        <Property Name="IsNoise" Type="Edm.Boolean" Nullable="false" />
+        <Property Name="Description" Type="Microsoft.AzureAd.Icm.Types.NewDescriptionEntry" />
+        <Property Name="ResolveContactAlias" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="IncidentUnresolveParameters">
+        <Property Name="Description" Type="Microsoft.AzureAd.Icm.Types.NewDescriptionEntry" />
+      </ComplexType>
+      <ComplexType Name="IncidentActivateParameters">
+        <Property Name="DisableVoiceNotifications" Type="Edm.Boolean" Nullable="false" />
+        <Property Name="Description" Type="Microsoft.AzureAd.Icm.Types.NewDescriptionEntry" />
+      </ComplexType>
+      <ComplexType Name="AlertSourceInfo">
+        <Property Name="SourceId" Type="Edm.Guid" />
+        <Property Name="Origin" Type="Edm.String" />
+        <Property Name="CreatedBy" Type="Edm.String" />
+        <Property Name="CreateDate" Type="Edm.DateTime" />
+        <Property Name="IncidentId" Type="Edm.String" />
+        <Property Name="ModifiedDate" Type="Edm.DateTime" />
+        <Property Name="Revision" Type="Edm.Int32" />
+      </ComplexType>
+      <ComplexType Name="IncidentLocation">
+        <Property Name="Environment" Type="Edm.String" />
+        <Property Name="DataCenter" Type="Edm.String" />
+        <Property Name="DeviceGroup" Type="Edm.String" />
+        <Property Name="DeviceName" Type="Edm.String" />
+        <Property Name="ServiceInstanceId" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="MitigationData">
+        <Property Name="Date" Type="Edm.DateTime" />
+        <Property Name="ChangedBy" Type="Edm.String" />
+        <Property Name="Mitigation" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="ResolutionData">
+        <Property Name="Date" Type="Edm.DateTime" />
+        <Property Name="ChangedBy" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="IncidentImpactedComponent">
+        <Property Name="TenantPublicId" Type="Edm.String" />
+        <Property Name="ComponentName" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="NewDescriptionEntry">
+        <Property Name="ChangedBy" Type="Edm.String" />
+        <Property Name="SubmittedBy" Type="Edm.String" />
+        <Property Name="Cause" Type="Edm.String" />
+        <Property Name="Date" Type="Edm.DateTime" />
+        <Property Name="SubmitDate" Type="Edm.DateTime" />
+        <Property Name="Text" Type="Edm.String" />
+        <Property Name="RenderType" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="AcknowledgementData">
+        <Property Name="IsAcknowledged" Type="Edm.Boolean" />
+        <Property Name="AcknowledgeDate" Type="Edm.DateTime" />
+        <Property Name="AcknowledgeContactAlias" Type="Edm.String" />
+      </ComplexType>
+      <ComplexType Name="ReactivationData">
+        <Property Name="DisableVoiceNotifications" Type="Edm.Boolean" />
+      </ComplexType>
+      <Association Name="Microsoft_AzureAd_Icm_Types_Incident_DescriptionEntries_Microsoft_AzureAd_Icm_Types_DescriptionEntry_DescriptionEntriesPartner">
+        <End Type="Microsoft.AzureAd.Icm.Types.DescriptionEntry" Role="DescriptionEntries" Multiplicity="*" />
+        <End Type="Microsoft.AzureAd.Icm.Types.Incident" Role="DescriptionEntriesPartner" Multiplicity="0..1" />
+      </Association>
+      <Association Name="Microsoft_AzureAd_Icm_Types_Incident_RootCause_Microsoft_AzureAd_Icm_Types_RootCauseEntity_RootCausePartner">
+        <End Type="Microsoft.AzureAd.Icm.Types.RootCauseEntity" Role="RootCause" Multiplicity="0..1" />
+        <End Type="Microsoft.AzureAd.Icm.Types.Incident" Role="RootCausePartner" Multiplicity="0..1" />
+      </Association>
+      <Association Name="Microsoft_AzureAd_Icm_Types_Incident_ParentIncident_Microsoft_AzureAd_Icm_Types_Incident_ParentIncidentPartner">
+        <End Type="Microsoft.AzureAd.Icm.Types.Incident" Role="ParentIncident" Multiplicity="0..1" />
+        <End Type="Microsoft.AzureAd.Icm.Types.Incident" Role="ParentIncidentPartner" Multiplicity="0..1" />
+      </Association>
+      <Association Name="Microsoft_AzureAd_Icm_Types_Incident_ChildIncidents_Microsoft_AzureAd_Icm_Types_Incident_ChildIncidentsPartner">
+        <End Type="Microsoft.AzureAd.Icm.Types.Incident" Role="ChildIncidents" Multiplicity="*" />
+        <End Type="Microsoft.AzureAd.Icm.Types.Incident" Role="ChildIncidentsPartner" Multiplicity="0..1" />
+      </Association>
+      <Association Name="Microsoft_AzureAd_Icm_Types_Incident_RelatedIncidents_Microsoft_AzureAd_Icm_Types_Incident_RelatedIncidentsPartner">
+        <End Type="Microsoft.AzureAd.Icm.Types.Incident" Role="RelatedIncidents" Multiplicity="*" />
+        <End Type="Microsoft.AzureAd.Icm.Types.Incident" Role="RelatedIncidentsPartner" Multiplicity="0..1" />
+      </Association>
+    </Schema>
+    <Schema Namespace="Microsoft.AzureAd.Icm.ODataApi.Models" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+      <ComplexType Name="IncidentAttachment">
+        <Property Name="Filename" Type="Edm.String" Nullable="false" />
+        <Property Name="ContentsBase64" Type="Edm.String" Nullable="false" />
+      </ComplexType>
+    </Schema>
+    <Schema Namespace="Microsoft.AzureAd.Icm.Types.Api" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+      <ComplexType Name="CustomFieldGroup">
+        <Property Name="PublicId" Type="Edm.String" />
+        <Property Name="GroupType" Type="Edm.String" />
+        <Property Name="CustomFields" Type="Collection(Microsoft.AzureAd.Icm.Types.Api.CustomField)" Nullable="false" />
+      </ComplexType>
+      <ComplexType Name="CustomField">
+        <Property Name="Name" Type="Edm.String" />
+        <Property Name="DisplayName" Type="Edm.String" />
+        <Property Name="Value" Type="Edm.String" />
+        <Property Name="Type" Type="Edm.String" />
+      </ComplexType>
+    </Schema>
+    <Schema Namespace="Default" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+      <EntityContainer Name="Container" m:IsDefaultEntityContainer="true">
+        <EntitySet Name="incidents" EntityType="Microsoft.AzureAd.Icm.Types.Incident" />
+        <EntitySet Name="descriptionEntries" EntityType="Microsoft.AzureAd.Icm.Types.DescriptionEntry" />
+        <EntitySet Name="rootcause" EntityType="Microsoft.AzureAd.Icm.Types.RootCauseEntity" />
+        <FunctionImport Name="CreateExternalLink" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="ExternalTarget" Type="Microsoft.AzureAd.Icm.Types.ExternalAssociationTarget" />
+        </FunctionImport>
+        <FunctionImport Name="RemoveExternalLink" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="ExternalTarget" Type="Microsoft.AzureAd.Icm.Types.ExternalAssociationTarget" />
+        </FunctionImport>
+        <FunctionImport Name="AcknowledgeIncident" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="AcknowledgementParameters" Type="Microsoft.AzureAd.Icm.Types.IncidentAcknowledgeParameters" />
+        </FunctionImport>
+        <FunctionImport Name="TransferIncident" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="TransferParameters" Type="Microsoft.AzureAd.Icm.Types.IncidentTransferParameters" />
+        </FunctionImport>
+        <FunctionImport Name="MitigateIncident" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="MitigateParameters" Type="Microsoft.AzureAd.Icm.Types.IncidentMitigateParameters" />
+        </FunctionImport>
+        <FunctionImport Name="ResolveIncident" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="ResolveParameters" Type="Microsoft.AzureAd.Icm.Types.IncidentResolveParameters" />
+        </FunctionImport>
+        <FunctionImport Name="ActivateIncident" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="ActivateParameters" Type="Microsoft.AzureAd.Icm.Types.IncidentActivateParameters" />
+        </FunctionImport>
+        <FunctionImport Name="UnresolveIncident" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="UnresolveParameters" Type="Microsoft.AzureAd.Icm.Types.IncidentUnresolveParameters" />
+        </FunctionImport>
+        <FunctionImport Name="CreateAttachment" IsBindable="true" m:IsAlwaysBindable="true">
+          <Parameter Name="bindingParameter" Type="Microsoft.AzureAd.Icm.Types.Incident" />
+          <Parameter Name="Attachment" Type="Microsoft.AzureAd.Icm.ODataApi.Models.IncidentAttachment" />
+        </FunctionImport>
+        <AssociationSet Name="Microsoft_AzureAd_Icm_Types_Incident_DescriptionEntries_Microsoft_AzureAd_Icm_Types_DescriptionEntry_DescriptionEntriesPartnerSet" Association="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_DescriptionEntries_Microsoft_AzureAd_Icm_Types_DescriptionEntry_DescriptionEntriesPartner">
+          <End Role="DescriptionEntriesPartner" EntitySet="incidents" />
+          <End Role="DescriptionEntries" EntitySet="descriptionEntries" />
+        </AssociationSet>
+        <AssociationSet Name="Microsoft_AzureAd_Icm_Types_Incident_RootCause_Microsoft_AzureAd_Icm_Types_RootCauseEntity_RootCausePartnerSet" Association="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_RootCause_Microsoft_AzureAd_Icm_Types_RootCauseEntity_RootCausePartner">
+          <End Role="RootCausePartner" EntitySet="incidents" />
+          <End Role="RootCause" EntitySet="rootcause" />
+        </AssociationSet>
+        <AssociationSet Name="Microsoft_AzureAd_Icm_Types_Incident_ParentIncident_Microsoft_AzureAd_Icm_Types_Incident_ParentIncidentPartnerSet" Association="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_ParentIncident_Microsoft_AzureAd_Icm_Types_Incident_ParentIncidentPartner">
+          <End Role="ParentIncidentPartner" EntitySet="incidents" />
+          <End Role="ParentIncident" EntitySet="incidents" />
+        </AssociationSet>
+        <AssociationSet Name="Microsoft_AzureAd_Icm_Types_Incident_ChildIncidents_Microsoft_AzureAd_Icm_Types_Incident_ChildIncidentsPartnerSet" Association="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_ChildIncidents_Microsoft_AzureAd_Icm_Types_Incident_ChildIncidentsPartner">
+          <End Role="ChildIncidentsPartner" EntitySet="incidents" />
+          <End Role="ChildIncidents" EntitySet="incidents" />
+        </AssociationSet>
+        <AssociationSet Name="Microsoft_AzureAd_Icm_Types_Incident_RelatedIncidents_Microsoft_AzureAd_Icm_Types_Incident_RelatedIncidentsPartnerSet" Association="Microsoft.AzureAd.Icm.Types.Microsoft_AzureAd_Icm_Types_Incident_RelatedIncidents_Microsoft_AzureAd_Icm_Types_Incident_RelatedIncidentsPartner">
+          <End Role="RelatedIncidentsPartner" EntitySet="incidents" />
+          <End Role="RelatedIncidents" EntitySet="incidents" />
+        </AssociationSet>
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>

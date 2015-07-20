@@ -17,9 +17,50 @@ namespace Mail2Bug
 			public string Name { get; set; }
 
 			public TfsServerConfig TfsServerConfig { get; set; }
+
+            public IcmServerConfig IcmServerConfig { get; set;}
 			public WorkItemSettings WorkItemSettings { get; set; }
 			public EmailSettings EmailSettings { get; set; }
+
+            
 		}
+
+        public class IcmServerConfig
+        {
+            public string OdataServiceBaseUri { get; set; }
+            //this will be ICM API that we will use to connect to ICM to create/update ICM tickets.
+            public string IcmUri { get; set; }
+            //this cert will be used to connect to ICM and perform activity. it's only valid for 2 years.
+
+            public string FilterOption { get; set; }
+
+            public string TopOption { get; set; }
+
+            public string SkipOption { get; set; }
+            public string Certificate { get; set; }
+
+            //this will be the template used to create a particular ICM ticket.
+            public string IcmTicketTemplate { get; set; }
+
+            // The query to be used for populating the cache used for connecting outlook conversations to bugs.
+            // If a work item is not captured by the query, the connection between conversation and work item would 
+            // fail (and a new work item will be created instead of updating the existing one)
+            public string CacheQueryFile { get; set; }
+
+            //used for testing purposes and wouldn't create any ICM tickets. 
+            public bool SimulationMode { get; set; }
+
+            // The name of the field which contains all the allowed names in its allowed values list (usually "Assigned To")
+            public string NamesListFieldName { get; set; }
+
+            //the team ticket will be assigned to in ICM.
+            public string IcmTenant { get; set; }
+
+            
+            
+
+        }
+
 
 		public class TfsServerConfig
 		{

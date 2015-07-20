@@ -61,6 +61,15 @@
     <Reference Include="Microsoft.Cis.Monitoring.Events">
       <HintPath>..\Public\IcmConnectorSdk\Microsoft.Cis.Monitoring.Events.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Data.Edm, Version=5.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Data.Edm.5.6.0\lib\net40\Microsoft.Data.Edm.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Data.OData, Version=5.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Data.OData.5.6.0\lib\net40\Microsoft.Data.OData.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Data.Services.Client, Version=5.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Data.Services.Client.5.6.0\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Exchange.WebServices, Version=14.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Microsoft.Exchange.WebServices.1.2\lib\Microsoft.Exchange.WebServices.dll</HintPath>
@@ -97,6 +106,10 @@
     <Reference Include="MonAgentListener">
       <HintPath>..\Public\IcmConnectorSdk\MonAgentListener.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Src\AdsUCM\private\packages\Newtonsoft.Json.Nuget\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Configuration.Install" />
@@ -104,9 +117,13 @@
     <Reference Include="System.DirectoryServices" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Management" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Spatial, Version=5.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Spatial.5.6.0\lib\net40\System.Spatial.dll</HintPath>
+    </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -150,6 +167,7 @@
     <Compile Include="Helpers\FileUtils.cs" />
     <Compile Include="InstanceRunner.cs" />
     <Compile Include="MessageProcessingStrategies\DateBasedValueResolver.cs" />
+    <Compile Include="MessageProcessingStrategies\IcmNameResolver.cs" />
     <Compile Include="MessageProcessingStrategies\IMessageProcessingStrategy.cs" />
     <Compile Include="MessageProcessingStrategies\INameResolver.cs" />
     <Compile Include="MessageProcessingStrategies\NameResolver.cs" />
@@ -161,9 +179,22 @@
     <Compile Include="Mail2BugEngine.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Service References\IcmIncidentsApiODataReference\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.datasvcmap</DependentUpon>
+    </Compile>
+    <Compile Include="Service References\IcmOnCallApiODataReference\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.datasvcmap</DependentUpon>
+    </Compile>
     <Compile Include="TestHelpers\RandomDataHelper.cs" />
-    <Compile Include="WorkItemManagement\IcmDataClient.cs" />
+    <Compile Include="WorkItemManagement\CertAuthODataClient.cs" />
+    <Compile Include="WorkItemManagement\DataServiceODataClient.cs" />
+    <Compile Include="WorkItemManagement\FieldNames.cs" />
     <Compile Include="WorkItemManagement\IcmWorkItemManager.cs" />
+    <Compile Include="WorkItemManagement\IODataClient.cs" />
     <Compile Include="WorkItemManagement\IWorkItemManager.cs" />
     <Compile Include="WorkItemManagement\MessageToWorkItemMapper.cs" />
     <Compile Include="WorkItemManagement\TFSQueryParser.cs" />
@@ -178,6 +209,54 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <None Include="Resources\dem2b.bin">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Resources\pubbugs.bin">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Resources\query.wiq">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Service References\IcmIncidentsApiODataReference\service.edmx" />
+    <None Include="Service References\IcmOnCallApiODataReference\service.edmx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\FullyAnnotatedConfigReference.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Mail2ICMConfigExample.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Resources\Mail2BugConfig_UCM-Bug.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\query.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\ReplyTemplateExample.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="Service References\IcmIncidentsApiODataReference\Reference.datasvcmap">
+      <Generator>DataServicesCoreClientGenerator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+    <None Include="Service References\IcmOnCallApiODataReference\Reference.datasvcmap">
+      <Generator>DataServicesCoreClientGenerator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Service References\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ServiceReferenceMetadataStorage Include="Service References\IcmIncidentsApiODataReference\">
+      <Type>datasvcmap</Type>
+    </ServiceReferenceMetadataStorage>
+    <ServiceReferenceMetadataStorage Include="Service References\IcmOnCallApiODataReference\">
+      <Type>datasvcmap</Type>
+    </ServiceReferenceMetadataStorage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

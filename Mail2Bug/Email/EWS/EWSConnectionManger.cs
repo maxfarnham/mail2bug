@@ -104,7 +104,7 @@ namespace Mail2Bug.Email.EWS
                 Service = exchangeService,
                 Router =
                     new RecipientsMailboxManagerRouter(
-                        new EWSMailFolder(Folder.Bind(exchangeService, WellKnownFolderName.Inbox)))
+                        new EWSMailFolder(Folder.Bind(exchangeService,WellKnownFolderName.Inbox)))
             };
         }
 

@@ -54,6 +54,8 @@ namespace Mail2Bug.Email.EWS
 
             var messages = _folder.GetMessages();
 
+
+
             foreach (var clientData in _clients)
             {
                 clientData.Value.Messages.Clear();

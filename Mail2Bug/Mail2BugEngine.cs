@@ -61,6 +61,7 @@ namespace Mail2Bug
             // Retreive the messages from the relevant mail folder
 			var inboxItemsList = _mailboxManager.ReadMessages().ToList();
 
+
             if (inboxItemsList.Count == 0)
             {
                 Logger.DebugFormat("No messages found for instance {0}", _config.Name);
@@ -93,18 +94,24 @@ namespace Mail2Bug
 
         private IMessageProcessingStrategy InitProcessingStrategy()
         {
-            IWorkItemManager workItemManager;
-            if (_config.TfsServerConfig.SimulationMode)
+        IWorkItemManager workItemManager = null ;
+
+           if (_config.IcmServerConfig != null && !_config.TfsServerConfig.SimulationMode)
+                {
+                    Logger.InfoFormat("Working to create ICMWorkitem Manager");
+                    workItemManager = new IcmWorkItemManagment(_config);
+                }
+            if (_config.TfsServerConfig!=null && !_config.TfsServerConfig.SimulationMode)
+                {
+                    Logger.InfoFormat("Working in standard mode, using TFSWorkItemManager");
+                    workItemManager = new TFSWorkItemManager(_config);
+
+                }
+            if (_config.TfsServerConfig != null && _config.TfsServerConfig.SimulationMode) 
             {
                 Logger.InfoFormat("Working in simulation mode. Using WorkItemManagerMock");
                 workItemManager = new WorkItemManagerMock(_config.WorkItemSettings.ConversationIndexFieldName);
             }
-            else
-            {
-                Logger.InfoFormat("Working in standard mode, using TFSWorkItemManager");
-                workItemManager = new TFSWorkItemManager(_config);
-            }
-
             Logger.InfoFormat("Initializing MessageProcessingStrategy");
             return new SimpleBugStrategy(_config, workItemManager);
         }

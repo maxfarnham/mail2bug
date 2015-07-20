@@ -100,19 +100,22 @@ namespace Mail2Bug.WorkItemManagement
         public static int? GetWorkItemIdFromConversationId(string conversationId, SortedList<string, int> bugs)
         {
             Logger.DebugFormat("GetWorkItemIdFromConversationId {0}", conversationId);
-            foreach (var bugConversationId in bugs.Keys)
+            if (bugs != null)
             {
-                if (bugConversationId.Trim() == String.Empty)
+                foreach (var bugConversationId in bugs.Keys)
                 {
-                    Logger.DebugFormat("Bug with empty conversation ID found in cache");
-                    continue;
-                }
+                    if (bugConversationId.Trim() == String.Empty)
+                    {
+                        Logger.DebugFormat("Bug with empty conversation ID found in cache");
+                        continue;
+                    }
 
-                if (conversationId.StartsWith(bugConversationId))
-                {
-                    return bugs[bugConversationId];
-                }
+                    if (conversationId.StartsWith(bugConversationId))
+                    {
+                        return bugs[bugConversationId];
+                    }
 
+                }
             }
 
             return null;
