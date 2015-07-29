@@ -52,37 +52,31 @@ namespace Mail2Bug.Email.EWS
                 return;
             }
 
-            var messages = _folder.GetMessages();
-
-
-
             foreach (var clientData in _clients)
             {
                 clientData.Value.Messages.Clear();
             }
 
-            messages
-                .OrderBy(message => message.ReceivedOn)
-                .ToList()
-                .ForEach(
-                    message =>
+            var messages = _folder.GetMessages().OrderBy(message => message.ReceivedOn).ToArray();
+            
+            foreach (var message in messages)
+            {
+                foreach (var clientData in _clients)
+                {
+                    if (clientData.Value.Evaluator(message))
                     {
-                        foreach (var clientData in _clients)
-                        {
-                            if (clientData.Value.Evaluator(message))
-                            {
-                                Logger.InfoFormat(
-                                    "Adding message to client queue: Client ID {0}; subject: {1}", 
-                                    clientData.Key, 
-                                    message.Subject);
+                        Logger.InfoFormat(
+                            "Adding message to client queue: Client ID {0}; subject: {1}",
+                            clientData.Key,
+                            message.Subject);
 
-                                clientData.Value.Messages.Add(message);
-                                return;
-                            }
-                        }
+                        clientData.Value.Messages.Add(message);
+                        return;
+                    }
+                }
 
-                        Logger.InfoFormat("Message doesn't fit to any client. Subject: {0}", message.Subject);
-                    });
+                Logger.InfoFormat("Message doesn't fit to any client. Subject: {0}", message.Subject);
+            }
 
             Logger.InfoFormat("Finished processing inbox for RecipientsMailboxManagerRouter");
         }

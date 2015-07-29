@@ -8,10 +8,11 @@ using Mail2Bug.WorkItemManagement;
 
 namespace Mail2Bug
 {
-	class Mail2BugEngine : IDisposable
-	{
-	    private readonly IMailboxManager _mailboxManager;
-		private readonly Config.InstanceConfig _config;
+    internal class Mail2BugEngine : IDisposable
+    {
+        private readonly IMailboxManager _mailboxManager;
+
+        private readonly Config.InstanceConfig _config;
 
         // We're using lazy initilization for the message processing strategy because it involves
         // initializing the work-item cache, which can be time consuming. For servers that host a high
@@ -23,29 +24,32 @@ namespace Mail2Bug
         // smaller one, since early intializations benefit future processing cycles.
         private readonly Lazy<IMessageProcessingStrategy> _messageProcessingStrategy;
 
-		public Mail2BugEngine(Config.InstanceConfig configInstance, MailboxManagerFactory mailboxManagerFactory)
-		{
-		    _config = configInstance;
+        private readonly IMessageProcessingStrategy _messageProcessingStrategyImmediate;
 
-		    Logger.InfoFormat("Initalizing MailboxManager");
+        public Mail2BugEngine(Config.InstanceConfig configInstance, MailboxManagerFactory mailboxManagerFactory)
+        {
+            _config = configInstance;
+
+            Logger.InfoFormat("Initalizing MailboxManager");
             _mailboxManager = mailboxManagerFactory.CreateMailboxManager(_config.EmailSettings);
 
-		    Logger.InfoFormat("Initializing WorkItemManager");
+            Logger.InfoFormat("Initializing WorkItemManager");
             _messageProcessingStrategy = new Lazy<IMessageProcessingStrategy>(InitProcessingStrategy);
-		}
+            _messageProcessingStrategyImmediate = InitProcessingStrategy();
+        }
 
-	    public void ProcessInbox()
-		{
-			try
-			{
+        public void ProcessInbox()
+        {
+            try
+            {
                 Logger.InfoFormat("Running for config instance '{0}'", _config.Name);
                 ProcessInboxInternal();
-			}
-			catch (Exception exception)
-			{
-				Logger.ErrorFormat("Exception while processing inbox for instance {0}\n{1}", _config.Name, exception);
-			}
-		}
+            }
+            catch (Exception exception)
+            {
+                Logger.ErrorFormat("Exception while processing inbox for instance {0}\n{1}", _config.Name, exception);
+            }
+        }
 
         /// <summary>
         /// This method is responsible for doing the actual work of processing the inbox.
@@ -54,12 +58,12 @@ namespace Mail2Bug
         /// Handling of each message is done in an exception-safe way (within a try-catch), to ensure that exceptions
         /// in processing one message don't affect the remaining messages.
         /// </summary>
-		private void ProcessInboxInternal()
-		{
-			Logger.DebugFormat("Reading messages from inbox ({0})", _config.EmailSettings.IncomingFolder);
+        private void ProcessInboxInternal()
+        {
+            Logger.DebugFormat("Reading messages from inbox ({0})", _config.EmailSettings.IncomingFolder);
 
             // Retreive the messages from the relevant mail folder
-			var inboxItemsList = _mailboxManager.ReadMessages().ToList();
+            var inboxItemsList = _mailboxManager.ReadMessages().ToList();
 
 
             if (inboxItemsList.Count == 0)
@@ -73,41 +77,41 @@ namespace Mail2Bug
             foreach (var message in inboxItemsList)
             {
                 var messageProcessedSuccessfully = true;
-			    try
-			    {
-			        Logger.InfoFormat("Processing message {0}", message.Subject);
-			        Logger.DebugFormat("Message sent on {0}", message.SentOn.ToLocalTime());
-			        _messageProcessingStrategy.Value.ProcessInboxMessage(message);
-			        Logger.InfoFormat("Message '{0}' processed successfully, moving to next message", message.Subject);
-			    }
-			    catch (Exception exception)
-			    {
-			        messageProcessedSuccessfully = false;
-			        Logger.Error("Error processing message", exception);
-			    }
-			    finally
-			    {
-			        _mailboxManager.OnProcessingFinished(message, messageProcessedSuccessfully);
-			    }
-			}
-		}
+                try
+                {
+                    Logger.InfoFormat("Processing message {0}", message.Subject);
+                    Logger.DebugFormat("Message sent on {0}", message.SentOn.ToLocalTime());
+                    _messageProcessingStrategy.Value.ProcessInboxMessage(message);
+                    Logger.InfoFormat("Message '{0}' processed successfully, moving to next message", message.Subject);
+                }
+                catch (Exception exception)
+                {
+                    messageProcessedSuccessfully = false;
+                    Logger.Error("Error processing message", exception);
+                }
+                finally
+                {
+                    _mailboxManager.OnProcessingFinished(message, messageProcessedSuccessfully);
+                }
+            }
+        }
 
         private IMessageProcessingStrategy InitProcessingStrategy()
         {
-        IWorkItemManager workItemManager = null ;
+            IWorkItemManager workItemManager = null;
 
-           if (_config.IcmServerConfig != null && !_config.TfsServerConfig.SimulationMode)
-                {
-                    Logger.InfoFormat("Working to create ICMWorkitem Manager");
-                    workItemManager = new IcmWorkItemManagment(_config);
-                }
-            if (_config.TfsServerConfig!=null && !_config.TfsServerConfig.SimulationMode)
-                {
-                    Logger.InfoFormat("Working in standard mode, using TFSWorkItemManager");
-                    workItemManager = new TFSWorkItemManager(_config);
+            if (_config.IcmServerConfig != null && !_config.IcmServerConfig.SimulationMode)
+            {
+                Logger.InfoFormat("Working to create ICMWorkitem Manager");
+                workItemManager = new IcmWorkItemManagment(_config);
+            }
+            if (_config.TfsServerConfig != null && !_config.TfsServerConfig.SimulationMode)
+            {
+                Logger.InfoFormat("Working in standard mode, using TFSWorkItemManager");
+                workItemManager = new TFSWorkItemManager(_config);
 
-                }
-            if (_config.TfsServerConfig != null && _config.TfsServerConfig.SimulationMode) 
+            }
+            if (_config.TfsServerConfig != null && _config.TfsServerConfig.SimulationMode)
             {
                 Logger.InfoFormat("Working in simulation mode. Using WorkItemManagerMock");
                 workItemManager = new WorkItemManagerMock(_config.WorkItemSettings.ConversationIndexFieldName);
@@ -117,9 +121,10 @@ namespace Mail2Bug
         }
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(Mail2BugEngine));
-	    public void Dispose()
-	    {
-	        DisposeUtils.DisposeIfDisposable(_messageProcessingStrategy);
-	    }
-	}
+
+        public void Dispose()
+        {
+            DisposeUtils.DisposeIfDisposable(_messageProcessingStrategy);
+        }
+    }
 }

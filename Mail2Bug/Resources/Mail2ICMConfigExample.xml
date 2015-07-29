@@ -6,8 +6,9 @@
         <IcmUri>https://icm.ad.msft.net/Connector3/ConnectorIncidentManager.svc</IcmUri>
         <OdataServiceBaseUri>https://icm.ad.msft.net/api/cert</OdataServiceBaseUri>
         <IcmTicketTemplate>Bug</IcmTicketTemplate>
-        <!-- this will be where we store the cert we could use to talk to ICM.-->
-        <Certificate>416bc155-979d-40d4-b422-e7dbccee36f2</Certificate>
+        <!-- Requested on case-by-case basis (https://icm.ad.msft.net/imp/ManageTenants.aspx). -->
+        <ConnectorId>416bc155-979d-40d4-b422-e7dbccee36f2</ConnectorId>
+        
         <FilterOption>CreateDate gt datetime'2015-07-07T00:00:00'</FilterOption>
         <TopOption>100</TopOption>
         <SkipOption></SkipOption>
@@ -26,7 +27,7 @@
           <!-- The important part is to include a default value for every mandatory field, otherwise work
                item creation will fail. The only automatically defined default is the 'Title' field, that gets
                the email subject as a value. -->
-          <DefaultValueDefinition Field="Orgin" Value="Mail2ICMTool" />
+          <DefaultValueDefinition Field="Origin" Value="Mail2ICMTool" />
           <DefaultValueDefinition Field="Severity" Value="2" />
           <DefaultValueDefinition Field="DataCenter" Value="All" />
           <DefaultValueDefinition Field="Environment " Value="Prod" />
@@ -56,15 +57,6 @@
           <DefaultValueDefinition Field="ResponsibleTenantId" Value="0" />
           <DefaultValueDefinition Field="ImpactedServicesIds" Value="0" />
           <DefaultValueDefinition Field="ImpactedTeamsPublicIds" Value="0" />
-          
-          
-          
-          
-          
-          
-          
-          
-          
         </DefaultFieldValues>
         <!-- 'true' means we should attached the email message that triggered the creation of the work item -->
         <AttachOriginalMessage>true</AttachOriginalMessage>
@@ -75,22 +67,22 @@
              Recipients can be specified as email addresses, or as display names
              When specifying more than one recipient, use ; as separator -->
         <ServiceType>EWSByRecipients</ServiceType>
-        <Recipients>tjimma@microsoft.com</Recipients>
+        <Recipients>mail4icm@microsoft.com</Recipients>
 
         <!-- The email address whose inbox that we want to monitor -->
-        <EWSMailboxAddress>tjimma@microsoft.com</EWSMailboxAddress>
+        <EWSMailboxAddress>mail4icm@microsoft.com</EWSMailboxAddress>
 
         <!-- A username with permissions to log in to the email account. This is generally either in the form of
              email address form (usually the same as the email address in EWSMailboxAddress), or in DOMAIN\username
              form. I've seen cases where the same server would take one or the other (or both), depending on the
              server set up, as well as the client set up, so if one doesn't work, try the other -->
-        <EWSUsername>tjimma@microsoft.com</EWSUsername>
+        <EWSUsername>mail4icm@microsoft.com</EWSUsername>
 
         <!-- Pointer to a file that stores the password for the login account. The file is expected to be encrypted
              with DPAPI - use the DpapiTool.exe from the Tools subfolder to create one. Note that the tool needs to be
              run under the same credentials that mail2bug will run with, otherwise it won't be able to decrypt the
              contents. -->
-        <EWSPasswordFile>.\Resources\password.bin</EWSPasswordFile>
+        <EWSPasswordFile>.\Resources\mail4icm.bin</EWSPasswordFile>
         <SendAckEmails>true</SendAckEmails>
         <AckEmailsRecipientsAll>true</AckEmailsRecipientsAll>
 

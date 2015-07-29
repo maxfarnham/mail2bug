@@ -13,21 +13,24 @@ namespace Mail2Bug.MessageProcessingStrategies
     public class SimpleBugStrategy : IMessageProcessingStrategy, IDisposable
     {
         private const int TfsTextFieldMaxLength = 255;
+
         private readonly Config.InstanceConfig _config;
-		private readonly IWorkItemManager _workItemManager;
+
+        private readonly IWorkItemManager _workItemManager;
+
         private readonly AckEmailHandler _ackEmailHandler;
+
         private readonly MessageToWorkItemMapper _messageToWorkItemMapper;
 
-		public SimpleBugStrategy(Config.InstanceConfig config, IWorkItemManager workItemManager)
+        public SimpleBugStrategy(Config.InstanceConfig config, IWorkItemManager workItemManager)
         {
             _config = config;
             _workItemManager = workItemManager;
-		    _ackEmailHandler = new AckEmailHandler(config);
-            _messageToWorkItemMapper = 
-                new MessageToWorkItemMapper(
-                    _config.EmailSettings.AppendOnlyEmailTitleRegex, 
-                    _config.EmailSettings.AppendOnlyEmailBodyRegex,
-                    _workItemManager.WorkItemsCache);
+            _ackEmailHandler = new AckEmailHandler(config);
+            _messageToWorkItemMapper = new MessageToWorkItemMapper(
+                _config.EmailSettings.AppendOnlyEmailTitleRegex,
+                _config.EmailSettings.AppendOnlyEmailBodyRegex,
+                _workItemManager.WorkItemsCache);
         }
 
         public void ProcessInboxMessage(IIncomingEmailMessage message)
@@ -49,9 +52,12 @@ namespace Mail2Bug.MessageProcessingStrategies
 
             InitWorkItemFields(message, workItemUpdates);
 
-        	var workItemId = _workItemManager.CreateWorkItem(workItemUpdates);
-            Logger.InfoFormat("Added new work item {0} for message with subject: {1} (conversation index:{2})", 
-                workItemId, message.Subject, message.ConversationIndex);
+            var workItemId = _workItemManager.CreateWorkItem(workItemUpdates);
+            Logger.InfoFormat(
+                "Added new work item {0} for message with subject: {1} (conversation index:{2})",
+                workItemId,
+                message.Subject,
+                message.ConversationIndex);
 
             try
             {
@@ -59,11 +65,11 @@ namespace Mail2Bug.MessageProcessingStrategies
                 var overrides = new OverridesExtractor(_config).GetOverrides(message);
                 TryApplyFieldOverrides(overrides, workItemId);
                 ProcessAttachments(message, workItemId);
-                
+
                 if (_config.WorkItemSettings.AttachOriginalMessage)
                 {
                     string originalMessageFile = message.SaveToFile();
-                    _workItemManager.AttachFiles(workItemId, new List<string> {originalMessageFile} );
+                    _workItemManager.AttachFiles(workItemId, new List<string> { originalMessageFile });
                 }
             }
             catch (Exception ex)
@@ -74,19 +80,20 @@ namespace Mail2Bug.MessageProcessingStrategies
         }
 
         private void InitWorkItemFields(IIncomingEmailMessage message, Dictionary<string, string> workItemUpdates)
-    	{
+        {
             var resolver = new SpecialValueResolver(message, _workItemManager.GetNameResolver());
 
-    		workItemUpdates["Title"] = resolver.Subject;
+            workItemUpdates["Title"] = resolver.Subject;
             var rawConversationIndex = message.ConversationIndex;
-            workItemUpdates[_config.WorkItemSettings.ConversationIndexFieldName] = 
-                rawConversationIndex.Substring(0, Math.Min(rawConversationIndex.Length, TfsTextFieldMaxLength));
+            workItemUpdates[_config.WorkItemSettings.ConversationIndexFieldName] = rawConversationIndex.Substring(
+                0,
+                Math.Min(rawConversationIndex.Length, TfsTextFieldMaxLength));
 
-    		foreach (var defaultFieldValue in _config.WorkItemSettings.DefaultFieldValues)
-    		{
-    		    workItemUpdates[defaultFieldValue.Field] = resolver.Resolve(defaultFieldValue.Value);
-    		}
-    	}
+            foreach (var defaultFieldValue in _config.WorkItemSettings.DefaultFieldValues)
+            {
+                workItemUpdates[defaultFieldValue.Field] = resolver.Resolve(defaultFieldValue.Value);
+            }
+        }
 
         private void TryApplyFieldOverrides(Dictionary<string, string> overrides, int workItemId)
         {
@@ -99,12 +106,15 @@ namespace Mail2Bug.MessageProcessingStrategies
             try
             {
                 Logger.DebugFormat("Overrides found. Calling 'ModifyWorkItem'");
-                _workItemManager.ModifyWorkItem(workItemId, "", overrides);
+                _workItemManager.ModifyWorkItem(workItemId, string.Empty, overrides);
             }
             catch (Exception ex)
             {
-                Logger.ErrorFormat("Exception caught while trying to apply overrides to work item {0}. Overrides: {1}\n{2}",
-                                      workItemId, overrides, ex);
+                Logger.ErrorFormat(
+                    "Exception caught while trying to apply overrides to work item {0}. Overrides: {1}\n{2}",
+                    workItemId,
+                    overrides,
+                    ex);
             }
         }
 
@@ -135,7 +145,9 @@ namespace Mail2Bug.MessageProcessingStrategies
         private void ProcessAttachments(IIncomingEmailMessage message, int workItemId)
         {
             var attachmentFiles = SaveAttachments(message);
-            _workItemManager.AttachFiles(workItemId, (from object file in attachmentFiles select file.ToString()).ToList());
+            _workItemManager.AttachFiles(
+                workItemId,
+                (from object file in attachmentFiles select file.ToString()).ToList());
             attachmentFiles.Delete();
         }
 

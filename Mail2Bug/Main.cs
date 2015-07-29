@@ -14,18 +14,15 @@ using Mail2Bug.Email.EWS;
 
 namespace Mail2Bug
 {
-    using Mail2Bug.WorkItemManagement;
-
     class MainApp
     {
         /// <summary>
         /// The main entry point for the windows application.
         /// </summary>
         [STAThread]
-        public static void Main(string[] args) // string[] args
+        public static void Main(string[] args)
         {
-          
-            if(args.Contains("-break"))
+            if (args.Contains("-break"))
             {
                 Logger.Info("Breaking into debugger");
                 Debugger.Break();
@@ -34,12 +31,12 @@ namespace Mail2Bug
             try
             {
                 string configPath = ConfigurationManager.AppSettings["ConfigPath"];
-                string [] configsFilePattern = ConfigurationManager.AppSettings["ConfigFilePattern"].Split(',');
+                string[] configsFilePattern = ConfigurationManager.AppSettings["ConfigFilePattern"].Split(',');
                 List<string> configFiles = new List<string>();
-                foreach ( string configpat in configsFilePattern)
+                foreach (string configpat in configsFilePattern)
                 {
                       var temp = Directory.GetFiles(configPath, configpat);
-                      foreach ( string st in temp)
+                      foreach (string st in temp)
                        {
                          configFiles.Add(st);
                        }
@@ -73,7 +70,7 @@ namespace Mail2Bug
 
                 if (configs.Count == 0)
                 {
-                    throw new ConfigurationErrorsException("None of the configs were valid");
+                    throw new ConfigurationErrorsException("None of the configs were valid.");
                 }
 
                 InitInstances(configs);
@@ -82,7 +79,7 @@ namespace Mail2Bug
                 var interval = TimeSpan.FromSeconds(ReadIntFromAppConfig("IntervalInSeconds", 1));
                 var useThreads = ReadBoolFromAppConfig("UseThreads", false);
 
-                for (var i = 0; i < iterations; ++i )
+                for (var i = 0; i < iterations; ++i)
                 {
                     Logger.InfoFormat("{0} Iteration {1} {0}", new string('-', 15), i);
                     RunInstances(useThreads);
@@ -116,7 +113,7 @@ namespace Mail2Bug
             {
                 return Config.GetConfig(configFile);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Logger.ErrorFormat("Exception when trying to load config from file {0}\n{1}", configFile, ex);
             }

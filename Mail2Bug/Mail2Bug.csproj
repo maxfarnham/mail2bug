@@ -190,11 +190,9 @@
       <DependentUpon>Reference.datasvcmap</DependentUpon>
     </Compile>
     <Compile Include="TestHelpers\RandomDataHelper.cs" />
-    <Compile Include="WorkItemManagement\CertAuthODataClient.cs" />
     <Compile Include="WorkItemManagement\DataServiceODataClient.cs" />
     <Compile Include="WorkItemManagement\FieldNames.cs" />
     <Compile Include="WorkItemManagement\IcmWorkItemManager.cs" />
-    <Compile Include="WorkItemManagement\IODataClient.cs" />
     <Compile Include="WorkItemManagement\IWorkItemManager.cs" />
     <Compile Include="WorkItemManagement\MessageToWorkItemMapper.cs" />
     <Compile Include="WorkItemManagement\TFSQueryParser.cs" />
@@ -209,9 +207,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
-    <None Include="Resources\dem2b.bin">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Include="Resources\pubbugs.bin">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -228,9 +223,6 @@
     <Content Include="Resources\Mail2ICMConfigExample.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
-    </Content>
-    <Content Include="Resources\Mail2BugConfig_UCM-Bug.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\query.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

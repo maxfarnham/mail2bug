@@ -1,240 +1,192 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.Data.Services.Client;
-using System.Linq;
-using Mail2Bug.IcmIncidentsApiODataReference;
-using Microsoft.Office.Ossm.Search;
-using System.Security.Cryptography.X509Certificates;
-using Mail2Bug.IcmOnCallApiODataReference.Microsoft.AzureAd.Icm.ODataApi.Models;
-using Newtonsoft.Json;
-using System.Net;
-using System.Text;
-using System.IO;
+﻿namespace Mail2Bug.WorkItemManagement
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Data.Services.Client;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Text;
 
-namespace Mail2Bug.WorkItemManagement
+    using Mail2Bug.IcmIncidentsApiODataReference;
+    using Mail2Bug.IcmOnCallApiODataReference.Microsoft.AzureAd.Icm.ODataApi.Models;
+
+    using Microsoft.AzureAd.Icm.Types;
+
+    using Newtonsoft.Json;
+
+    using DescriptionEntry = Mail2Bug.IcmIncidentsApiODataReference.DescriptionEntry;
+    using Incident = Mail2Bug.IcmIncidentsApiODataReference.Incident;
+
+    public class DataServiceODataClient
     {
-    public class DataServiceODataClient : IODataClient
+        private readonly Container odataClient;
+        private readonly X509Certificate certificate;
+        private readonly Config.InstanceConfig config;
+
+        public DataServiceODataClient(Uri serviceEndpointBaseUri, Config.InstanceConfig config, X509Certificate certificate)
         {
-        private Container odataClient;
-        private Config.InstanceConfig _config;
-        public DataServiceODataClient(Uri serviceEndpointBaseUri, Config.InstanceConfig config)
-            {
-                this.odataClient = new Container(serviceEndpointBaseUri)
-                {
-                    IgnoreMissingProperties = true
-                };
-                _config = config;
-            }
+            this.odataClient = new Container(serviceEndpointBaseUri) { IgnoreMissingProperties = true };
+            this.odataClient.SendingRequest2 += OdataClientOnSendingRequest2;
 
-        public X509Certificate RetrieveCertificate(string certThumbprint)
-            {
-            X509Certificate targetCertificate;
+            this.config = config;
+            this.certificate = certificate;
+        }
 
-            // Get the store where your certificate is in.
-            var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+        private void OdataClientOnSendingRequest2(object sender, SendingRequest2EventArgs sendingRequest2EventArgs)
+        {
+            ((HttpWebRequestMessage)sendingRequest2EventArgs.RequestMessage).HttpWebRequest.ClientCertificates.Add(this.certificate);
+        }
 
-            store.Open(OpenFlags.ReadOnly);
-
-            // Select your certificate from the store (any way you like).
-            X509Certificate2Collection certColl = store.Certificates.Find(X509FindType.FindByThumbprint, certThumbprint, false);
-
-            // Set the certificate property on the container.
-            targetCertificate = certColl[0];
-
-            store.Close();
-
-            return targetCertificate;
-            }
-        public void RegisterEventHandlerForSendingRequest(
-            EventHandler<SendingRequest2EventArgs> eventHandler)
-            {
+        public void RegisterEventHandlerForSendingRequest(EventHandler<SendingRequest2EventArgs> eventHandler)
+        {
             this.odataClient.SendingRequest2 += eventHandler;
-            }
+        }
 
-        public void UnRegisterEventHandlerForSendingRequest(
-            EventHandler<SendingRequest2EventArgs> eventHandler)
-            {
+        public void UnRegisterEventHandlerForSendingRequest(EventHandler<SendingRequest2EventArgs> eventHandler)
+        {
             this.odataClient.SendingRequest2 -= eventHandler;
-            }
+        }
 
         public Incident GetIncident(long incidentId)
-            {
+        {
             this.odataClient.MergeOption = MergeOption.OverwriteChanges;
-            Incident targetIncident = this.odataClient.incidents.Where(o => o.Id == incidentId).SingleOrDefault();
+            Incident targetIncident = this.odataClient.incidents.SingleOrDefault(o => o.Id == incidentId);
 
             if (targetIncident == null)
-                {
+            {
                 throw new Exception("invalid incident provided");
-                }
+            }
 
             return targetIncident;
-            }
-        public void ProcessAttachment(string fileName, string base64Contet,long incidentId)
+        }
+
+        public void ProcessAttachment(string fileName, string base64Contet, long incidentId)
         {
+            Attachment attachment = new Attachment(fileName, new MemoryStream(Encoding.UTF8.GetBytes(base64Contet)));
+
             IncidentAttachment iattachment = new IncidentAttachment();
             iattachment.Filename = fileName;
             iattachment.ContentsBase64 = base64Contet;
-            string json = JsonConvert.SerializeObject(iattachment);
-            string createAttachementUri ="https://icm.ad.msft.net/imp/IncidentDetails.aspx?id=" + incidentId + "/CreateAttachment";
+            string json = JsonConvert.SerializeObject(attachment);
+            string createAttachementUri = "https://icm.ad.msft.net/api/cert/incidents(" + incidentId
+                                          + ")/CreateAttachment";
 
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(createAttachementUri);
             httpWebRequest.ContentType = "text/json";
             httpWebRequest.Method = "POST";
+            //httpWebRequest.ContentLength = json.Length;
 
             try
-                {
-
+            {
                 using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
-                    {
+                {
                     streamWriter.Write(json);
                     streamWriter.Flush();
-                    streamWriter.Close();
-                    }
+                }
+
                 var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
                 using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-                    {
-                    var result = streamReader.ReadToEnd();
-                    }
-                }
-            catch (Exception ex)
                 {
-                    Console.WriteLine(ex.ToString());
+                    var result = streamReader.ReadToEnd();
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
 
         public IEnumerable<DescriptionEntry> GetIncidentDescriptionEntries(
             long incidentId,
             string topOption,
             string skipOption)
-            {
-            string incidentsRouteUri = _config.IcmServerConfig.OdataServiceBaseUri + "/incidents(" + incidentId + ")/DescriptionEntries?$inlinecount=allpages";
+        {
+            string incidentsRouteUri = this.config.IcmServerConfig.OdataServiceBaseUri + "/incidents(" + incidentId
+                                       + ")/DescriptionEntries?$inlinecount=allpages";
 
             if (string.IsNullOrWhiteSpace(topOption) == false)
-                {
+            {
                 incidentsRouteUri += "&$top=" + topOption;
-                }
+            }
 
             if (string.IsNullOrWhiteSpace(skipOption) == false)
-                {
+            {
                 incidentsRouteUri += "&$skip=" + skipOption;
-                }
+            }
 
             Uri request = new Uri(incidentsRouteUri);
             var response = (QueryOperationResponse<DescriptionEntry>)odataClient.Execute<DescriptionEntry>(request);
 
-          
-         
-                foreach (DescriptionEntry description in response)
-                    {
-                    yield return description;
-                    }
-
-                var continuation = response.GetContinuation();
-                if (continuation == null)
-                    {
-                    yield break;
-                    }
-
-                response = odataClient.Execute(continuation);
-
-            }
-           public void AcknowledgeIncident(Incident incident)
+            foreach (DescriptionEntry description in response)
             {
-            this.UpdateIncident(incident);
+                yield return description;
             }
 
-        public void EditIncident(Incident incident)
+            var continuation = response.GetContinuation();
+            if (continuation == null)
             {
-            this.UpdateIncident(incident);
+                yield break;
             }
 
-        public void MitigateIncident(Incident incident)
-            {
-            this.UpdateIncident(incident);
-            }
+            odataClient.Execute(continuation);
+        }
 
-        public void TransferIncident(Incident incident)
-            {
-            this.UpdateIncident(incident);
-            }
-
-        public void ResolveIncident(Incident incident)
-            {
-            this.UpdateIncident(incident);
-            }
-
-        public void ReactivateIncident(Incident incident)
-            {
-            this.UpdateIncident(incident);
-            }
-
-        public void UnresolveIncident(Incident incident)
-            {
-            this.UpdateIncident(incident);
-            }
-
-        public IEnumerable<Incident> SearchIncidents(
-            string topOption,
-            string skipOption,
-            string filterQueryOption)
-            {
-            string incidentsRouteUri = _config.IcmServerConfig.OdataServiceBaseUri + "/incidents?$inlinecount=allpages";
+        public IEnumerable<Incident> SearchIncidents(string topOption, string skipOption, string filterQueryOption)
+        {
+            string incidentsRouteUri = this.config.IcmServerConfig.OdataServiceBaseUri + "/incidents?$inlinecount=allpages";
 
             if (string.IsNullOrWhiteSpace(topOption) == false)
-                {
+            {
                 incidentsRouteUri += "&$top=" + topOption;
-                }
+            }
 
             if (string.IsNullOrWhiteSpace(skipOption) == false)
-                {
+            {
                 incidentsRouteUri += "&$skip=" + skipOption;
-                }
+            }
 
             if (string.IsNullOrWhiteSpace(filterQueryOption) == false)
-                {
+            {
                 incidentsRouteUri += "&$filter=" + filterQueryOption;
-                }
+            }
+
             QueryOperationResponse<Incident> response = null;
             try
-                {
-
+            {
                 Uri request = new Uri(incidentsRouteUri);
                 response = (QueryOperationResponse<Incident>)odataClient.Execute<Incident>(request);
-                }
+            }
             catch (Exception ex)
-                {
+            {
                 Console.WriteLine(ex.InnerException.ToString());
-                }
+            }
 
-
-          
             while (true)
-                {
+            {
                 foreach (Incident incident in response)
-                    {
+                {
                     yield return incident;
-                    }
+                }
 
                 var continuation = response.GetContinuation();
                 if (continuation == null)
-                    {
+                {
                     yield break;
-                    }
+                }
 
                 response = odataClient.Execute(continuation);
-                }
             }
+        }
 
-        private void UpdateIncident(Incident incident)
-            {
+        public void UpdateIncident(Incident incident)
+        {
             if (incident != null)
-                {
+            {
                 this.odataClient.UpdateObject(incident);
                 this.odataClient.SaveChanges(SaveChangesOptions.PatchOnUpdate);
-                }
             }
-          
         }
-       
     }
+}

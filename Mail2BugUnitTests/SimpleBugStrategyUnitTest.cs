@@ -356,8 +356,10 @@ namespace Mail2BugUnitTests
             }
         }
 
-        private static void ProcessMailbox(MailManagerMock mailManager, Config.InstanceConfig instanceConfig,
-                                           WorkItemManagerMock workItemManagerMock)
+        private static void ProcessMailbox(
+            MailManagerMock mailManager, 
+            Config.InstanceConfig instanceConfig,
+            WorkItemManagerMock workItemManagerMock)
         {
             var sbs = new SimpleBugStrategy(instanceConfig, workItemManagerMock);
 

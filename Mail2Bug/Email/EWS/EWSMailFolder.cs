@@ -1,12 +1,9 @@
-﻿ #define DEBUG
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Exchange.WebServices.Data;
 
 namespace Mail2Bug.Email.EWS
 {
-   
     class EWSMailFolder : IMailFolder
     {
         private readonly Folder _folder;
@@ -30,15 +27,11 @@ namespace Mail2Bug.Email.EWS
             }
 
             var view = new ItemView(itemCount);
-
-         #if DEBUG
-            var items = _folder.FindItems("subject:(mail2IcmTest)", view);
-         #else
             var items = _folder.FindItems(view);
-         #endif
+
             return items
                     .Where(item => item is EmailMessage) // Return only email message items - ignore any other items
-                    .Select(item => new EWSIncomingMessage((EmailMessage) item)); // And wrap them with EWSIncomingMessage
+                    .Select(item => new EWSIncomingMessage((EmailMessage)item)); // And wrap them with EWSIncomingMessage
         }
     }
 }
