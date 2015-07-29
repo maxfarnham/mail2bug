@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System.Net;
 using System.Text;
 using System.IO;
+using log4net;
 
 namespace Mail2Bug.WorkItemManagement
     {
@@ -18,6 +19,7 @@ namespace Mail2Bug.WorkItemManagement
         {
         private Container odataClient;
         private Config.InstanceConfig _config;
+        private static readonly ILog Logger = LogManager.GetLogger(typeof(DataServiceODataClient));
         public DataServiceODataClient(Uri serviceEndpointBaseUri, Config.InstanceConfig config)
             {
                 this.odataClient = new Container(serviceEndpointBaseUri)
@@ -76,7 +78,15 @@ namespace Mail2Bug.WorkItemManagement
             iattachment.Filename = fileName;
             iattachment.ContentsBase64 = base64Contet;
             string json = JsonConvert.SerializeObject(iattachment);
-            string createAttachementUri ="https://icm.ad.msft.net/imp/IncidentDetails.aspx?id=" + incidentId + "/CreateAttachment";
+
+            Logger.DebugFormat("fileName:    {0}", fileName);
+            Logger.DebugFormat("base64Contet {0}", base64Contet);
+
+            Logger.DebugFormat("Json String: {0} ", json);
+
+            string createAttachementUri = "https://icm.ad.msft.net/api/user/incidents("+incidentId+")/CreateAttachment";
+
+            Logger.DebugFormat("createAttachementUri {0}", createAttachementUri);
 
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(createAttachementUri);
             httpWebRequest.ContentType = "text/json";
@@ -95,6 +105,7 @@ namespace Mail2Bug.WorkItemManagement
                 using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
                     {
                     var result = streamReader.ReadToEnd();
+                    Logger.DebugFormat("HttpResponse:{0}", result);
                     }
                 }
             catch (Exception ex)

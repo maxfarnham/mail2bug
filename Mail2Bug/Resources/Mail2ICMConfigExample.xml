@@ -29,7 +29,7 @@
           <DefaultValueDefinition Field="Orgin" Value="Mail2ICMTool" />
           <DefaultValueDefinition Field="Severity" Value="2" />
           <DefaultValueDefinition Field="DataCenter" Value="All" />
-          <DefaultValueDefinition Field="Environment " Value="Prod" />
+          <DefaultValueDefinition Field="Environment" Value="Prod" />
           <DefaultValueDefinition Field="Description" Value="##MessageBody" />
           <DefaultValueDefinition Field="CreateDate" Value="##DateTime.Now" />
           <DefaultValueDefinition Field="Status" Value="Active" />

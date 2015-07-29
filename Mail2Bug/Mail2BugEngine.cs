@@ -96,7 +96,7 @@ namespace Mail2Bug
         {
         IWorkItemManager workItemManager = null ;
 
-           if (_config.IcmServerConfig != null && !_config.TfsServerConfig.SimulationMode)
+           if (_config.IcmServerConfig != null)
                 {
                     Logger.InfoFormat("Working to create ICMWorkitem Manager");
                     workItemManager = new IcmWorkItemManagment(_config);

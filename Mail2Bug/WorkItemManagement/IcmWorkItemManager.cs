@@ -21,7 +21,7 @@ namespace Mail2Bug.WorkItemManagement
     {
         private const string _toolName = "Mail2ICM";
         private readonly Config.InstanceConfig _config;
-        private readonly DateTime _dateHolder;
+        private DateTime _dateHolder;
         private static readonly ILog Logger = LogManager.GetLogger(typeof(TFSWorkItemManager));
         private readonly INameResolver _nameResolver;
         private static string _certThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
@@ -163,6 +163,36 @@ namespace Mail2Bug.WorkItemManagement
             WorkItemsCache[keyField] = workItemId;
         }
 
+
+        public AlertSourceIncident TryApplyFields(Dictionary<string,string> values)
+         {
+            
+            AlertSourceIncident incident = new AlertSourceIncident();
+            _dateHolder=DateTime.UtcNow;
+            incident.ImpactStartDate = DateTime.Parse(values[FieldNames.Incident.ImpactStartDate]);
+            incident.Title = values[FieldNames.Incident.Title];
+            incident.Severity = int.Parse(values[FieldNames.Incident.Severity]);
+            incident.Description = values[FieldNames.Incident.Description];
+            incident.Source = new AlertSourceInfo
+            {
+                CreateDate = _dateHolder,
+                CreatedBy = values[FieldNames.Incident.CreatedBy],
+                IncidentId= new Guid().ToString(),
+                ModifiedDate=_dateHolder,
+                Origin = values[FieldNames.Incident.Origin]
+            };
+            incident.OccurringLocation = new IncidentLocation
+            {
+                DataCenter = values[FieldNames.OccurringLocation.DataCenter],
+                DeviceGroup = "MyDG",
+                DeviceName = "MyDevice",
+                Environment = values["Environment"],
+                ServiceInstanceId = "AllMine"
+            };
+
+
+            return incident;
+         }
         public int CreateWorkItem(Dictionary<string, string> values)
         {
             AlertSourceIncident incident = new AlertSourceIncident();
@@ -175,18 +205,19 @@ namespace Mail2Bug.WorkItemManagement
             incident.Description = values["Description"];
             incident.Source = new AlertSourceInfo
             {
+                SourceId= new Guid(),
                 CreateDate = _dateHolder,
                 CreatedBy = "tjimma",
-                IncidentId = "11153837",
+                IncidentId = Guid.NewGuid().ToString(),
                 ModifiedDate = _dateHolder,
-                Origin = values["Orgin"]
+                Origin = "Mail2ICM"
             };
             incident.OccurringLocation = new IncidentLocation
             {
                 DataCenter = values["DataCenter"],
                 DeviceGroup = "MyDG",
                 DeviceName = "MyDevice",
-                Environment =  values["Environment "],
+                Environment =  values["Environment"],
                 ServiceInstanceId = "AllMine"
             };
             incident.RaisingLocation = new IncidentLocation
@@ -197,7 +228,7 @@ namespace Mail2Bug.WorkItemManagement
                 Environment = "MyEnv",
                 ServiceInstanceId = "AllMine"
             };
-            incident.RoutingId = "Test";
+            incident.RoutingId = "email://mail2icm/user360";
             incident.Status = IncidentStatus.Active;
 
             

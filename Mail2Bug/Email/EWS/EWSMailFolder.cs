@@ -32,11 +32,11 @@ namespace Mail2Bug.Email.EWS
             var view = new ItemView(itemCount);
 
          #if DEBUG
-            var items = _folder.FindItems("subject:(mail2IcmTest)", view);
+            var items = _folder.FindItems("subject:(Mail2Bug Mailbox)", view);
          #else
             var items = _folder.FindItems(view);
          #endif
-            return items
+             return items
                     .Where(item => item is EmailMessage) // Return only email message items - ignore any other items
                     .Select(item => new EWSIncomingMessage((EmailMessage) item)); // And wrap them with EWSIncomingMessage
         }

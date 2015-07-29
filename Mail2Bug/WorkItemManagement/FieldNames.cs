@@ -40,6 +40,18 @@ namespace Mail2Bug.WorkItemManagement
             /// <summary> incident acknowledge contact alias field name </summary>
             public const string AcknowledgeContactAlias = "AcknowledgeContactAlias";
             }
+        public static class OccurringLocation
+            {
+            /// <summary> incident acknowledge status field name </summary>
+                public const string DataCenter = "DataCenter";
+
+                /// <summary> incident acknowledge date field name </summary>
+                public const string AcknowledgeDate = "AcknowledgeDate";
+
+                /// <summary> incident acknowledge contact alias field name </summary>
+                public const string AcknowledgeContactAlias = "AcknowledgeContactAlias";
+                
+            }
 
         /// <summary> Incident class </summary>
         public static class Incident
@@ -49,6 +61,9 @@ namespace Mail2Bug.WorkItemManagement
 
             /// <summary> Incident create date field name </summary>
             public const string CreateDate = "CreateDate";
+
+            /// <summary> Incident create date field name </summary>
+            public const string CreatedBy = "CreateBy";
 
             /// <summary> Incident modified date field name </summary>
             public const string ModifiedDate = "ModifiedDate";
@@ -122,6 +137,9 @@ namespace Mail2Bug.WorkItemManagement
             /// <summary> incident keywords field name </summary>
             public const string Keywords = "Keywords";
 
+            /// <summary> incident description field name </summary>
+            public const string Description = "Description";
+
             /// <summary> incident description entries field name </summary>
             public const string DescriptionEntries = "DescriptionEntries";
 
@@ -178,6 +196,10 @@ namespace Mail2Bug.WorkItemManagement
 
             /// <summary> tsg output field name </summary>
             public const string TsgOutput = "TsgOutput";
+
+            /// <summary> source origin field name </summary>
+            public const string Origin = "Origin";
+
 
             /// <summary> source origin field name </summary>
             public const string SourceOrigin = "SourceOrigin";
