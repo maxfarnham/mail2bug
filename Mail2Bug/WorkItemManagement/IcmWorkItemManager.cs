@@ -200,6 +200,36 @@
             WorkItemsCache[keyField] = workItemId;
         }
 
+
+        public AlertSourceIncident TryApplyFields(Dictionary<string,string> values)
+         {
+            
+            AlertSourceIncident incident = new AlertSourceIncident();
+            DateTime dateHolder = DateTime.UtcNow;
+            incident.ImpactStartDate = DateTime.Parse(values[FieldNames.Incident.ImpactStartDate]);
+            incident.Title = values[FieldNames.Incident.Title];
+            incident.Severity = int.Parse(values[FieldNames.Incident.Severity]);
+            incident.Description = values[FieldNames.Incident.Description];
+            incident.Source = new AlertSourceInfo
+            {
+                CreateDate = dateHolder,
+                CreatedBy = values[FieldNames.Incident.CreatedBy],
+                IncidentId = new Guid().ToString(),
+                ModifiedDate = dateHolder,
+                Origin = values[FieldNames.Incident.Origin]
+            };
+            incident.OccurringLocation = new IncidentLocation
+            {
+                DataCenter = values[FieldNames.OccurringLocation.DataCenter],
+                DeviceGroup = "MyDG",
+                DeviceName = "MyDevice",
+                Environment = values["Environment"],
+                ServiceInstanceId = "AllMine"
+            };
+
+
+            return incident;
+         }
         public int CreateWorkItem(Dictionary<string, string> values)
         {
             AlertSourceIncident incident = new AlertSourceIncident();
@@ -214,18 +244,19 @@
             incident.Description = values["Description"];
             incident.Source = new AlertSourceInfo
             {
+                SourceId= new Guid(),
                 CreateDate = dateHolder,
                 CreatedBy = "Mail2IcM",
-                IncidentId = "11153837",
+                IncidentId = Guid.NewGuid().ToString(),
                 ModifiedDate = dateHolder,
-                Origin = values["Origin"]
+                Origin = "Mail2ICM"
             };
             incident.OccurringLocation = new IncidentLocation();
                                              //{
                                              //    DataCenter = values["DataCenter"],
                                              //    DeviceGroup = "MyDG",
                                              //    DeviceName = "MyDevice",
-                                             //    Environment = values["Environment "],
+                // Environment =  values["Environment "],
                                              //    ServiceInstanceId = "AllMine"
                                              //};
             incident.RaisingLocation = new IncidentLocation();
@@ -236,7 +267,7 @@
                                            //    Environment = "MyEnv",
                                            //    ServiceInstanceId = "AllMine"
                                            //};
-            incident.RoutingId = "Test";
+            incident.RoutingId = "email://mail2icm/user360";
             incident.Status = IncidentStatus.Active;
 
             const RoutingOptions RoutingOptions = RoutingOptions.None;

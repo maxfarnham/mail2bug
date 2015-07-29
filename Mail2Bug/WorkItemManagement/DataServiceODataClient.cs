@@ -9,6 +9,8 @@
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
 
+    using log4net;
+
     using Mail2Bug.IcmIncidentsApiODataReference;
     using Mail2Bug.IcmOnCallApiODataReference.Microsoft.AzureAd.Icm.ODataApi.Models;
 
@@ -24,7 +26,7 @@
         private readonly Container odataClient;
         private readonly X509Certificate certificate;
         private readonly Config.InstanceConfig config;
-
+        private static readonly ILog Logger = LogManager.GetLogger(typeof(DataServiceODataClient));
         public DataServiceODataClient(Uri serviceEndpointBaseUri, Config.InstanceConfig config, X509Certificate certificate)
         {
             this.odataClient = new Container(serviceEndpointBaseUri) { IgnoreMissingProperties = true };
@@ -70,8 +72,15 @@
             iattachment.Filename = fileName;
             iattachment.ContentsBase64 = base64Contet;
             string json = JsonConvert.SerializeObject(attachment);
+
+            Logger.DebugFormat("fileName:    {0}", fileName);
+            Logger.DebugFormat("base64Contet {0}", base64Contet);
+
+            Logger.DebugFormat("Json String: {0} ", json);
+
             string createAttachementUri = "https://icm.ad.msft.net/api/cert/incidents(" + incidentId
                                           + ")/CreateAttachment";
+            Logger.DebugFormat("createAttachementUri {0}", createAttachementUri);
 
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(createAttachementUri);
             httpWebRequest.ContentType = "text/json";
@@ -90,6 +99,7 @@
                 using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
                 {
                     var result = streamReader.ReadToEnd();
+                    Logger.DebugFormat("HttpResponse:{0}", result);
                 }
             }
             catch (Exception ex)
