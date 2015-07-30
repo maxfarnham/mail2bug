@@ -1,24 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Mail2Bug.WorkItemManagement
-    {
+﻿namespace Mail2Bug.WorkItemManagement
+{
     public static class FieldNames
-        {
+    {
         public static class ResolutionData
-            {
+        {
             /// <summary> resolution date field name </summary>
             public const string ResolvedDate = "ResolvedDate";
 
             /// <summary> contact resolving the incident field name </summary>
             public const string ChangedBy = "ResolvedBy";
-            }
+        }
 
         public static class MitigationData
-            {
+        {
             /// <summary> mitigation date field name </summary>
             public const string MitigatedDate = "MitigatedDate";
 
@@ -27,10 +21,10 @@ namespace Mail2Bug.WorkItemManagement
 
             /// <summary> mitigation field name </summary>
             public const string Mitigation = "Mitigation";
-            }
+        }
 
         public static class Acknowledgement
-            {
+        {
             /// <summary> incident acknowledge status field name </summary>
             public const string IsAcknowledged = "IsAcknowledged";
 
@@ -39,23 +33,60 @@ namespace Mail2Bug.WorkItemManagement
 
             /// <summary> incident acknowledge contact alias field name </summary>
             public const string AcknowledgeContactAlias = "AcknowledgeContactAlias";
-            }
+        }
+
         public static class OccurringLocation
-            {
+        {
             /// <summary> incident acknowledge status field name </summary>
-                public const string DataCenter = "DataCenter";
+            public const string DataCenter = "DataCenter";
 
-                /// <summary> incident acknowledge date field name </summary>
-                public const string AcknowledgeDate = "AcknowledgeDate";
+            /// <summary> incident acknowledge date field name </summary>
+            public const string AcknowledgeDate = "AcknowledgeDate";
 
-                /// <summary> incident acknowledge contact alias field name </summary>
-                public const string AcknowledgeContactAlias = "AcknowledgeContactAlias";
-                
-            }
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string AcknowledgeContactAlias = "AcknowledgeContactAlias";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string DeviceGroup = "DeviceGroup";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string DeviceName = "DeviceName";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string Environment = "Environment";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string ServiceInstanceId = "ServiceInstanceId";
+        }
+
+        public static class RaisingLocation
+        {
+            /// <summary> incident acknowledge status field name </summary>
+            public const string DataCenter = "DataCenter";
+
+            /// <summary> incident acknowledge date field name </summary>
+            public const string AcknowledgeDate = "AcknowledgeDate";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string AcknowledgeContactAlias = "AcknowledgeContactAlias";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string DeviceGroup = "DeviceGroup";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string DeviceName = "DeviceName";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string Environment = "Environment";
+
+            /// <summary> incident acknowledge contact alias field name </summary>
+            public const string ServiceInstanceId = "ServiceInstanceId";
+        }
+
 
         /// <summary> Incident class </summary>
         public static class Incident
-            {
+        {
             /// <summary> Incident Id field name </summary>
             public const string Id = "Id";
 
@@ -200,7 +231,6 @@ namespace Mail2Bug.WorkItemManagement
             /// <summary> source origin field name </summary>
             public const string Origin = "Origin";
 
-
             /// <summary> source origin field name </summary>
             public const string SourceOrigin = "SourceOrigin";
 
@@ -212,7 +242,6 @@ namespace Mail2Bug.WorkItemManagement
 
             /// <summary> impacted teams public ids field name </summary>
             public const string ImpactedTeamsPublicIds = "ImpactedTeamsPublicIds";
-
-            }
         }
     }
+}

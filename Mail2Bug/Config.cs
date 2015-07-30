@@ -40,6 +40,8 @@ namespace Mail2Bug
 
             public Guid ConnectorId { get; set; }
 
+            public string RoutingId { get; set; }
+
             // Template to create a ICM ticket.
             public string IcmTicketTemplate { get; set; }
 

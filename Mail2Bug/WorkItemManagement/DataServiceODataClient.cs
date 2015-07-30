@@ -6,8 +6,11 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
+    using System.Threading.Tasks;
 
     using log4net;
 
@@ -15,11 +18,14 @@
     using Mail2Bug.IcmOnCallApiODataReference.Microsoft.AzureAd.Icm.ODataApi.Models;
 
     using Microsoft.AzureAd.Icm.Types;
+    using Microsoft.Exchange.WebServices.Data;
 
     using Newtonsoft.Json;
 
+    using Attachment = Microsoft.AzureAd.Icm.Types.Attachment;
     using DescriptionEntry = Mail2Bug.IcmIncidentsApiODataReference.DescriptionEntry;
     using Incident = Mail2Bug.IcmIncidentsApiODataReference.Incident;
+    using Task = System.Threading.Tasks.Task;
 
     public class DataServiceODataClient
     {
@@ -27,6 +33,7 @@
         private readonly X509Certificate certificate;
         private readonly Config.InstanceConfig config;
         private static readonly ILog Logger = LogManager.GetLogger(typeof(DataServiceODataClient));
+
         public DataServiceODataClient(Uri serviceEndpointBaseUri, Config.InstanceConfig config, X509Certificate certificate)
         {
             this.odataClient = new Container(serviceEndpointBaseUri) { IgnoreMissingProperties = true };
@@ -54,38 +61,47 @@
         public Incident GetIncident(long incidentId)
         {
             this.odataClient.MergeOption = MergeOption.OverwriteChanges;
-            Incident targetIncident = this.odataClient.incidents.SingleOrDefault(o => o.Id == incidentId);
+            Incident targetIncident = this.odataClient.incidents.Where(o => o.Id == incidentId).SingleOrDefault();
 
             if (targetIncident == null)
             {
-                throw new Exception("invalid incident provided");
+                throw new Exception("Invalid incident provided.");
             }
 
             return targetIncident;
         }
 
-        public void ProcessAttachment(string fileName, string base64Contet, long incidentId)
+        public async void ProcessAttachment(string fileName, string base64Content, long incidentId)
         {
-            Attachment attachment = new Attachment(fileName, new MemoryStream(Encoding.UTF8.GetBytes(base64Contet)));
+            //var stream = new FileStream(fileName, FileMode.Open);
+            //Attachment attachment = new Attachment(fileName, stream);
+
+            String fileAsBase64 = Convert.ToBase64String(File.ReadAllBytes(fileName));
 
             IncidentAttachment iattachment = new IncidentAttachment();
             iattachment.Filename = fileName;
-            iattachment.ContentsBase64 = base64Contet;
-            string json = JsonConvert.SerializeObject(attachment);
-
-            Logger.DebugFormat("fileName:    {0}", fileName);
-            Logger.DebugFormat("base64Contet {0}", base64Contet);
-
-            Logger.DebugFormat("Json String: {0} ", json);
+            iattachment.ContentsBase64 = fileAsBase64;
+            string json = JsonConvert.SerializeObject(iattachment);
+            json = "{\"Attachment\":" + json + "}";
 
             string createAttachementUri = "https://icm.ad.msft.net/api/cert/incidents(" + incidentId
                                           + ")/CreateAttachment";
             Logger.DebugFormat("createAttachementUri {0}", createAttachementUri);
 
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(createAttachementUri);
-            httpWebRequest.ContentType = "text/json";
+            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(createAttachementUri);
+            httpWebRequest.ClientCertificates.Add(certificate);
+            httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
-            //httpWebRequest.ContentLength = json.Length;
+
+            //WebRequestHandler handler = new WebRequestHandler();
+            //handler.ClientCertificates.Add(certificate);
+
+            //HttpClient client = new HttpClient(handler);
+            //client.BaseAddress = new Uri(createAttachementUri);
+            //client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            //var response = client.PostAsJsonAsync(createAttachementUri, iattachment);
+            //await Task.WhenAll(response);
 
             try
             {

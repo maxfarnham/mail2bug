@@ -11,7 +11,7 @@ namespace Mail2Bug.WorkItemManagement
     {
         private readonly string _appendOnlyEmailTitleRegex;
         private readonly string _appendOnlyEmailBodyRegex;
-        private readonly SortedList<string, int> _workItemsCache;
+        private readonly SortedList<string, long> _workItemsCache;
         
         /// <summary>
         /// This class is used for mapping incoming messages to work item IDs, either based on the
@@ -27,7 +27,7 @@ namespace Mail2Bug.WorkItemManagement
         public MessageToWorkItemMapper(
             string appendOnlyEmailTitleRegex, 
             string appendOnlyEmailBodyRegex, 
-            SortedList<string,int> workItemsCache )
+            SortedList<string, long> workItemsCache)
         {
             _appendOnlyEmailTitleRegex = appendOnlyEmailTitleRegex;
             _appendOnlyEmailBodyRegex = appendOnlyEmailBodyRegex;
@@ -39,7 +39,7 @@ namespace Mail2Bug.WorkItemManagement
         /// </summary>
         /// <param name="message">The email message for which we want to find the work item ID</param>
         /// <returns></returns>
-        public int? GetWorkItemId(IIncomingEmailMessage message)
+        public long? GetWorkItemId(IIncomingEmailMessage message)
         {
             var appendOnlyId = IsAppendOnlyMessage(message);
             if (appendOnlyId.HasValue)
@@ -97,7 +97,7 @@ namespace Mail2Bug.WorkItemManagement
             return Int32.Parse(workItemIdString);
         }
 
-        public static int? GetWorkItemIdFromConversationId(string conversationId, SortedList<string, int> bugs)
+        public static long? GetWorkItemIdFromConversationId(string conversationId, SortedList<string, long> bugs)
         {
             Logger.DebugFormat("GetWorkItemIdFromConversationId {0}", conversationId);
             if (bugs != null)

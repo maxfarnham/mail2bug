@@ -17,10 +17,10 @@ namespace Mail2Bug.WorkItemManagement
             _keyField = keyField;
             _resolver = resolver ?? new NameResolverMock();
 
-            WorkItemsCache = new SortedList<string, int>();
+            WorkItemsCache = new SortedList<string, long>();
         }
 
-        public void AttachFiles(int workItemId, List<string> fileList)
+        public void AttachFiles(long workItemId, List<string> fileList)
         {
             foreach (var filename in fileList.Where(filename => !File.Exists(filename)))
             {
@@ -40,7 +40,7 @@ namespace Mail2Bug.WorkItemManagement
             Attachments[workItemId].AddRange(fileList);
         }
 
-        public void CacheWorkItem(int workItemId)
+        public void CacheWorkItem(long workItemId)
         {
             if (ThrowOnCacheWorkItem != null) throw ThrowOnCacheWorkItem;
 
@@ -74,7 +74,7 @@ namespace Mail2Bug.WorkItemManagement
             return id;
         }
 
-        public void ModifyWorkItem(int workItemId, string comment, Dictionary<string, string> values)
+        public void ModifyWorkItem(long workItemId, string comment, Dictionary<string, string> values)
         {
             if (ThrowOnModifyBug != null) throw ThrowOnModifyBug;
 
@@ -105,10 +105,10 @@ namespace Mail2Bug.WorkItemManagement
 
         }
 
-        public SortedList<string, int> WorkItemsCache { get; set; }
+        public SortedList<string, long> WorkItemsCache { get; set; }
 
-        public Dictionary<int, Dictionary<string, string>> Bugs = new Dictionary<int, Dictionary<string, string>>(); 
-        public Dictionary<int, List<string>> Attachments = new Dictionary<int, List<string>>();
+        public Dictionary<long, Dictionary<string, string>> Bugs = new Dictionary<long, Dictionary<string, string>>(); 
+        public Dictionary<long, List<string>> Attachments = new Dictionary<long, List<string>>();
 
         public Exception ThrowOnAttachFiles { get; set; }
         public Exception ThrowOnCacheBugs { get; set; }

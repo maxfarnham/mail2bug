@@ -118,7 +118,7 @@ namespace Mail2Bug.MessageProcessingStrategies
             }
         }
 
-        private void UpdateWorkItem(IIncomingEmailMessage message, int workItemId)
+        private void UpdateWorkItem(IIncomingEmailMessage message, long workItemId)
         {
             Logger.InfoFormat("Modifying work item {0} subject: {1}", workItemId, message.Subject);
 
@@ -142,7 +142,7 @@ namespace Mail2Bug.MessageProcessingStrategies
             ProcessAttachments(message, workItemId);
         }
 
-        private void ProcessAttachments(IIncomingEmailMessage message, int workItemId)
+        private void ProcessAttachments(IIncomingEmailMessage message, long workItemId)
         {
             var attachmentFiles = SaveAttachments(message);
             _workItemManager.AttachFiles(

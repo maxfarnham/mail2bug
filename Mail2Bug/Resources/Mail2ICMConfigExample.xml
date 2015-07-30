@@ -8,7 +8,7 @@
         <IcmTicketTemplate>Bug</IcmTicketTemplate>
         <!-- Requested on case-by-case basis (https://icm.ad.msft.net/imp/ManageTenants.aspx). -->
         <ConnectorId>416bc155-979d-40d4-b422-e7dbccee36f2</ConnectorId>
-        
+        <RoutingId>email://mail2icm/user360</RoutingId>
         <FilterOption>CreateDate gt datetime'2015-07-07T00:00:00'</FilterOption>
         <TopOption>100</TopOption>
         <SkipOption></SkipOption>
@@ -27,7 +27,7 @@
           <!-- The important part is to include a default value for every mandatory field, otherwise work
                item creation will fail. The only automatically defined default is the 'Title' field, that gets
                the email subject as a value. -->
-          <DefaultValueDefinition Field="Origin" Value="Mail2ICMTool" />
+          <DefaultValueDefinition Field="Origin" Value="Mail2IcM Tool" />
           <DefaultValueDefinition Field="Severity" Value="2" />
           <DefaultValueDefinition Field="DataCenter" Value="All" />
           <DefaultValueDefinition Field="Environment" Value="Prod" />
@@ -51,7 +51,7 @@
           <DefaultValueDefinition Field="Component" Value="##Component" />
           <DefaultValueDefinition Field="CustomerName" Value="#CustomerName" />
           <DefaultValueDefinition Field="Keywords" Value="" />
-          <DefaultValueDefinition Field="ImpactStartDate" Value="No" />
+          <DefaultValueDefinition Field="ImpactStartDate" Value="##ImpactStartDate" />
           <DefaultValueDefinition Field="IncidentType" Value="No" />
           <DefaultValueDefinition Field="OriginatingTenantId" Value="0" />
           <DefaultValueDefinition Field="ResponsibleTenantId" Value="0" />

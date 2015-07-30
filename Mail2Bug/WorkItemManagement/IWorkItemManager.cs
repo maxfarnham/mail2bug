@@ -5,11 +5,11 @@ namespace Mail2Bug.WorkItemManagement
 {
     public interface IWorkItemManager
     {
-        void AttachFiles(int workItemId, List<string> fileList);
+        void AttachFiles(long workItemId, List<string> fileList);
 
-        SortedList<string, int> WorkItemsCache { get; }
+        SortedList<string, long> WorkItemsCache { get; }
 
-        void CacheWorkItem(int workItemId);
+        void CacheWorkItem(long workItemId);
 
         /// <param name="values">Field Values</param>
         /// <returns>Bug ID</returns>
@@ -18,7 +18,7 @@ namespace Mail2Bug.WorkItemManagement
         /// <param name="workItemId">The ID of the bug to modify </param>
         /// <param name="comment">Comment to add to description</param>
         /// <param name="values">List of fields to change</param>
-        void ModifyWorkItem(int workItemId, string comment, Dictionary<string, string> values);
+        void ModifyWorkItem(long workItemId, string comment, Dictionary<string, string> values);
 
         INameResolver GetNameResolver();
     }

@@ -17,7 +17,7 @@ namespace Mail2Bug.WorkItemManagement
 {
     public class TFSWorkItemManager : IWorkItemManager, IDisposable
     {
-        public SortedList<string, int> WorkItemsCache { get; private set; }
+        public SortedList<string, long> WorkItemsCache { get; private set; }
 
         public TFSWorkItemManager(Config.InstanceConfig config)
         {
@@ -160,13 +160,16 @@ namespace Mail2Bug.WorkItemManagement
                 DPAPIHelper.ReadDataFromFile(_config.TfsServerConfig.ServiceIdentityPasswordFile));
         }
 
-        public void AttachFiles(int workItemId, List<string> fileList)
+        public void AttachFiles(long workItemId, List<string> fileList)
         {
-            if (workItemId <= 0) return;
+            if (workItemId <= 0)
+            {
+                return;
+            }
 
             try
             {
-                WorkItem workItem = _tfsStore.GetWorkItem(workItemId);
+                var workItem = this.GetTfsWorkItem(workItemId);
                 workItem.Open();
 
                 fileList.ForEach(file => workItem.Attachments.Add(new Attachment(file)));
@@ -176,6 +179,23 @@ namespace Mail2Bug.WorkItemManagement
             {
                 Logger.Error(exception.ToString());
             }
+        }
+
+        private WorkItem GetTfsWorkItem(long workItemId)
+        {
+            int tfsWorkItemid;
+            try
+            {
+                tfsWorkItemid = Convert.ToInt16(workItemId);
+            }
+            catch (Exception exception)
+            {
+                Logger.ErrorFormat("Failed to convert workItemId ({0}) to Int32 value. Details: {1}", workItemId, exception);
+                return null;
+            }
+
+            WorkItem workItem = this._tfsStore.GetWorkItem(tfsWorkItemid);
+            return workItem;
         }
 
         /// <param name="values">The list of fields and their desired values to apply to the work item</param>
@@ -213,14 +233,15 @@ namespace Mail2Bug.WorkItemManagement
         /// <param name="workItemId">The ID of the work item to modify </param>
         /// <param name="comment">Comment to add to description</param>
         /// <param name="values">List of fields to change</param>
-        public void ModifyWorkItem(int workItemId, string comment, Dictionary<string, string> values)
+        public void ModifyWorkItem(long workItemId, string comment, Dictionary<string, string> values)
         {
-            if (workItemId <= 0) return;
+            if (workItemId <= 0)
+            {
+                return;
+            }
 
-            var workItem = _tfsStore.GetWorkItem(workItemId);
-
+            var workItem = this.GetTfsWorkItem(workItemId);
             workItem.Open();
-
             workItem.History = comment.Replace("\n", "<br>");
             foreach (var key in values.Keys)
             {
@@ -234,15 +255,18 @@ namespace Mail2Bug.WorkItemManagement
 
         #region Work item caching
 
-        public void CacheWorkItem(int workItemId)
+        public void CacheWorkItem(long workItemId)
         {
-            if (WorkItemsCache.ContainsValue(workItemId)) return; // Work item already cached - nothing to do
+            if (WorkItemsCache.ContainsValue(workItemId))
+            {
+                return; // Work item already cached - nothing to do
+            }
 
             // It is important that we don't just get the conversation ID from the caller and update the cache with the work item
             // ID and conversation ID, because if the work item already exists, the conversation ID will be different (probably shorter
             // than the one the caller currently has)
             // That's why we get the work item from TFS and get the conversation ID from there
-            CacheWorkItem(_tfsStore.GetWorkItem(workItemId));
+            CacheWorkItem(GetTfsWorkItem(workItemId));
         }
 
         /// <returns>Sorted List of FieldValue's with ConversationIndex as the key</returns>
@@ -250,7 +274,7 @@ namespace Mail2Bug.WorkItemManagement
         {
             Logger.InfoFormat("Initializing work items cache");
 
-            WorkItemsCache = new SortedList<string, int>();
+            WorkItemsCache = new SortedList<string, long>();
 
             //search TFS to get list
             var itemsToCache = _tfsStore.Query(_config.TfsServerConfig.CacheQuery);
