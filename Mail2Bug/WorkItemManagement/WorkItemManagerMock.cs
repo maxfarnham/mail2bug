@@ -54,7 +54,7 @@ namespace Mail2Bug.WorkItemManagement
             WorkItemsCache[conversationId] = workItemId;
         }
 
-        public int CreateWorkItem(Dictionary<string, string> values)
+        public long CreateWorkItem(Dictionary<string, string> values)
         {
             if (ThrowOnCreateBug != null) throw ThrowOnCreateBug;
 

@@ -3,9 +3,12 @@
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.IO;
+    using System.Linq;
     using System.Security.Cryptography.X509Certificates;
     using System.ServiceModel;
     using System.ServiceModel.Security;
+    using System.Xml.Serialization;
 
     using log4net;
 
@@ -18,18 +21,15 @@
     public class IcmWorkItemManagment : IWorkItemManager
     {
         private const string ToolName = "Mail2IcM";
-
         private const string CertThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(TFSWorkItemManager));
 
         private readonly Config.InstanceConfig config;
-
         private readonly DateTime dateHolder;
-
         private readonly INameResolver nameResolver;
-
         private readonly DataServiceODataClient dataServiceClient;
+        private readonly AlertSourceIncident incidentDefaults;
 
         private ConnectorIncidentManagerClient connectorClient;
 
@@ -39,22 +39,24 @@
         {
             ValidateConfig(instanceConfig);
             config = instanceConfig;
+            incidentDefaults = config.IncidentDefaults;
 
             X509Certificate certificate = RetrieveCertificate(CertThumbprint);
             dataServiceClient = new DataServiceODataClient(
-                new Uri(config.IcmServerConfig.OdataServiceBaseUri),
+                new Uri(config.IcmClientConfig.OdataServiceBaseUri),
                 config,
                 certificate);
 
             connectorClient = ConnectToIcmInstance();
-            Logger.InfoFormat("Connected to IcM");
             if (connectorClient == null)
             {
-                Logger.ErrorFormat("Cannot initialize IcM Webservice");
-                throw new Exception("Cannot initialize IcM Webservice");
+                Logger.ErrorFormat("Cannot initialize IcM Webservice.");
+                throw new Exception("Cannot initialize IcM Webservice.");
             }
 
-            Logger.InfoFormat("Initializing WorkItems Cache");
+            Logger.InfoFormat("Connected to IcM.");
+
+            Logger.InfoFormat("Initializing WorkItems Cache.");
             InitTicketCache();
             nameResolver = InitNameResolver();
             dateHolder = DateTime.UtcNow;
@@ -62,21 +64,15 @@
 
         public X509Certificate RetrieveCertificate(string certThumbprint)
         {
-            X509Certificate targetCertificate;
-
-            // Get the store where your certificate is in.
             var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
-
             store.Open(OpenFlags.ReadOnly);
 
-            // Select your certificate from the store (any way you like).
             X509Certificate2Collection certColl = store.Certificates.Find(
                 X509FindType.FindByThumbprint,
                 certThumbprint,
                 false);
 
-            // Set the certificate property on the container.
-            targetCertificate = certColl[0];
+            X509Certificate targetCertificate = certColl[0];
 
             store.Close();
 
@@ -91,12 +87,12 @@
             }
 
             // Temp variable used for shorthand writing below
-            var icmConfig = config.IcmServerConfig;
+            var icmConfig = config.IcmClientConfig;
 
-            ValidateConfigString(icmConfig.IcmUri, "IcmServerConfig.IcmUri");
-            ValidateConfigString(icmConfig.IcmTenant, "IcmServerConfig.IcmTenant");
-            ValidateConfigString(icmConfig.IcmTicketTemplate, "IcmServerConfig.IcmTicketTemplate");
-            ValidateConfigString(icmConfig.NamesListFieldName, "IcmServerConfig.NamesListFieldName");
+            ValidateConfigString(icmConfig.IcmUri, "IcmClientConfig.IcmUri");
+            ValidateConfigString(icmConfig.IcmTenant, "IcmClientConfig.IcmTenant");
+            ValidateConfigString(icmConfig.IcmTicketTemplate, "IcmClientConfig.IcmTicketTemplate");
+            ValidateConfigString(icmConfig.NamesListFieldName, "IcmClientConfig.NamesListFieldName");
             ValidateConfigString(
                 config.WorkItemSettings.ConversationIndexFieldName,
                 "WorkItemSettings.ConversationIndexFieldName");
@@ -106,11 +102,9 @@
         {
             try
             {
-                Logger.InfoFormat(
-                    "Connecting to IcM  {0} using {1} Cert",
-                    config.IcmServerConfig.IcmUri,
-                    CertThumbprint);
-                var icmServer = CreateConnectorClient(config.IcmServerConfig.IcmUri);
+                Logger.InfoFormat("Connecting to IcM '{0}' using certificate '{1}'.",
+                    config.IcmClientConfig.IcmUri, CertThumbprint);
+                var icmServer = CreateConnectorClient(config.IcmClientConfig.IcmUri);
                 Logger.InfoFormat("Successfully connected to IcM");
                 return icmServer;
             }
@@ -156,19 +150,20 @@
 
         private void InitTicketCache()
         {
-            Logger.InfoFormat("Initializing Icm Ticket cache");
+            Logger.InfoFormat("Initializing IcM Ticket cache...");
             WorkItemsCache = new SortedList<string, long>();
 
             var itemsToCache = dataServiceClient.SearchIncidents(
-                config.IcmServerConfig.TopOption,
-                config.IcmServerConfig.SkipOption,
-                config.IcmServerConfig.FilterOption);
-            Logger.InfoFormat("items retrieved by IcM cache query");
+                config.IcmClientConfig.TopOption,
+                config.IcmClientConfig.SkipOption,
+                config.IcmClientConfig.FilterOption).ToArray();
+            Logger.InfoFormat("{0} items retrieved by IcM cache query.", itemsToCache.Count());
+            
             foreach (IcmIncidentsApiODataReference.Incident workItem in itemsToCache)
             {
                 try
                 {
-                    CacheWorkItem((int)workItem.Id);
+                    CacheWorkItem(workItem.Id);
                 }
                 catch (Exception ex)
                 {
@@ -189,8 +184,7 @@
         {
             foreach (string file in fileList)
             {
-                string base64Content = Helpers.FileUtils.FileToString(file);
-                dataServiceClient.ProcessAttachment(file, base64Content, workItemId);
+                dataServiceClient.ProcessAttachment(workItemId, file);
             }
         }
 
@@ -221,107 +215,77 @@
             WorkItemsCache[keyField] = workItem.Id;
         }
 
-        public AlertSourceIncident TryApplyFields(Dictionary<string, string> values)
+        public AlertSourceIncident CreateIncidentWithDefaults()
         {
             AlertSourceIncident incident = new AlertSourceIncident();
-            DateTime dateHolder = DateTime.UtcNow;
-            incident.ImpactStartDate = DateTime.Parse(values[FieldNames.Incident.ImpactStartDate]);
-            incident.Title = values[FieldNames.Incident.Title];
-            incident.Severity = int.Parse(values[FieldNames.Incident.Severity]);
-            incident.Description = values[FieldNames.Incident.Description];
-            incident.Keywords = values["ConversationId"];
+            incident.ImpactStartDate = incidentDefaults.ImpactStartDate;
+            incident.Title = incidentDefaults.Title;
+            incident.Severity = incidentDefaults.Severity;
+            incident.Description = incidentDefaults.Description;
+            incident.Keywords = incidentDefaults.Keywords;
             incident.Source = new AlertSourceInfo
             {
-                CreateDate = dateHolder,
-                //CreatedBy = values[FieldNames.Incident.CreatedBy],
+                CreatedBy = incidentDefaults.Source.CreatedBy,
+                CreateDate = incidentDefaults.Source.CreateDate,
                 IncidentId = Guid.NewGuid().ToString(),
-                ModifiedDate = dateHolder,
-                Origin = values[FieldNames.Incident.Origin]
+                ModifiedDate = incidentDefaults.Source.ModifiedDate,
+                Origin = incidentDefaults.Source.Origin
             };
             incident.OccurringLocation = new IncidentLocation
             {
-                DataCenter = values[FieldNames.OccurringLocation.DataCenter],
-                DeviceGroup = values[FieldNames.OccurringLocation.DeviceGroup],
-                DeviceName = values[FieldNames.OccurringLocation.DeviceName],
-                Environment = values[FieldNames.OccurringLocation.Environment],
-                ServiceInstanceId = values[FieldNames.OccurringLocation.ServiceInstanceId]
+                DataCenter = incidentDefaults.OccurringLocation.DataCenter,
+                DeviceGroup = incidentDefaults.OccurringLocation.DeviceGroup,
+                DeviceName = incidentDefaults.OccurringLocation.DeviceName,
+                Environment = incidentDefaults.OccurringLocation.Environment,
+                ServiceInstanceId = incidentDefaults.OccurringLocation.ServiceInstanceId
             };
-
             incident.RaisingLocation = new IncidentLocation
             {
-                DataCenter = values[FieldNames.RaisingLocation.DataCenter],
-                DeviceGroup = values[FieldNames.RaisingLocation.DeviceGroup],
-                DeviceName = values[FieldNames.RaisingLocation.DeviceName],
-                Environment = values[FieldNames.RaisingLocation.Environment],
-                ServiceInstanceId = values[FieldNames.RaisingLocation.ServiceInstanceId]
+                DataCenter = incidentDefaults.RaisingLocation.DataCenter,
+                DeviceGroup = incidentDefaults.RaisingLocation.DeviceGroup,
+                DeviceName = incidentDefaults.RaisingLocation.DeviceName,
+                Environment = incidentDefaults.RaisingLocation.Environment,
+                ServiceInstanceId = incidentDefaults.RaisingLocation.ServiceInstanceId
             };
-            incident.RoutingId = config.IcmServerConfig.RoutingId;
-            incident.Status = IncidentStatus.Active;
+            incident.RoutingId = incidentDefaults.RoutingId;
+            incident.Status = incidentDefaults.Status;
 
             return incident;
         }
 
-        public int CreateWorkItem(Dictionary<string, string> values)
+        public long CreateWorkItem(Dictionary<string, string> values)
         {
-            AlertSourceIncident incident = TryApplyFields(values);
+            AlertSourceIncident incident = this.CreateIncidentWithDefaults();
             if (connectorClient == null)
             {
                 connectorClient = ConnectToIcmInstance();
             }
 
-            //incident.ServiceResponsible = new TenantIdentifier("ES Ads Diagnostics");
-            //if (connectorClient == null)
-            //{
-            //    connectorClient = ConnectToIcmInstance();
-            //}
-
-            //incident.ImpactStartDate = dateHolder;
-            //incident.Title = values["Title"];
-            //incident.Severity = int.Parse(values["Severity"]);
-            //incident.Description = values["Description"];
-            //incident.Source = new AlertSourceInfo
-            //{
-            //    SourceId = new Guid(),
-            //    CreateDate = dateHolder,
-            //    CreatedBy = "Mail2IcM",
-            //    IncidentId = "11505134", // Guid.NewGuid().ToString(),
-            //    ModifiedDate = dateHolder,
-            //    Origin = "Mail2IcM"
-            //};
-            //incident.OccurringLocation = new IncidentLocation();
-            ////{
-            ////    DataCenter = values["DataCenter"],
-            ////    DeviceGroup = "MyDG",
-            ////    DeviceName = "MyDevice",
-            //// Environment =  values["Environment "],
-            ////    ServiceInstanceId = "AllMine"
-            ////};
-            //incident.RaisingLocation = new IncidentLocation();
-            ////{
-            ////    DataCenter = "MyDC",
-            ////    DeviceGroup = "MyDG",
-            ////    DeviceName = "MyDevice",
-            ////    Environment = "MyEnv",
-            ////    ServiceInstanceId = "AllMine"
-            ////};
-            //incident.RoutingId = "Test";
-            //incident.Status = IncidentStatus.Active;
+            incident.ServiceResponsible = new TenantIdentifier("ES Ads Diagnostics");
 
             const RoutingOptions RoutingOptions = RoutingOptions.None;
-            int id = 0;
+            long id = 0;
 
             try
             {
                 // If the following exception is thrown while debugging, open Visual Studio as Administrator.
                 // Additional information: Could not establish secure channel for SSL/TLS with authority 'icm.ad.msft.net'.
                 IncidentAddUpdateResult result = connectorClient.AddOrUpdateIncident2(
-                    config.IcmServerConfig.ConnectorId,
+                    config.IcmClientConfig.ConnectorId,
                     incident,
                     RoutingOptions);
                 if (result != null)
                 {
-                    int.TryParse(result.IncidentId.ToString(), out id);
+                    id = result.IncidentId.Value;
                 }
+            }
+            catch (FaultException<IcmFault> icmFault)
+            {
+                Logger.ErrorFormat("Exception caught while creating an incident \n{0}", icmFault);
+            }
+            catch (FaultException unknownFault)
+            {
+                Logger.ErrorFormat("Exception caught while creating an incident \n{0}", unknownFault);
             }
             catch (Exception ex)
             {

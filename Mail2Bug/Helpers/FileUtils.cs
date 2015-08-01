@@ -53,20 +53,6 @@ namespace Mail2Bug.Helpers
 
             return filename;
         }
-        public static string EncodeTo64( string contentToEncode)
-        {
-            byte[] toEncodeAsBytes = Encoding.ASCII.GetBytes(contentToEncode);
-            return Convert.ToBase64String(toEncodeAsBytes);
-        }
-        public static string FileToString(string fileName)
-         {
-            string readContents;
-            using (StreamReader streamReader = new StreamReader(fileName))
-             {
-                 readContents = streamReader.ReadToEnd();
-             }
-            return EncodeTo64(readContents);
-         }
 
         private static readonly Random Rand = new Random();
     }

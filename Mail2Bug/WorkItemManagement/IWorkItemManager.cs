@@ -13,7 +13,7 @@ namespace Mail2Bug.WorkItemManagement
 
         /// <param name="values">Field Values</param>
         /// <returns>Bug ID</returns>
-        int CreateWorkItem(Dictionary<string, string> values);
+        long CreateWorkItem(Dictionary<string, string> values);
 
         /// <param name="workItemId">The ID of the bug to modify </param>
         /// <param name="comment">Comment to add to description</param>

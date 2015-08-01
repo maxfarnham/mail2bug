@@ -95,7 +95,7 @@ namespace Mail2Bug.MessageProcessingStrategies
             }
         }
 
-        private void TryApplyFieldOverrides(Dictionary<string, string> overrides, int workItemId)
+        private void TryApplyFieldOverrides(Dictionary<string, string> overrides, long workItemId)
         {
             if (overrides.Count == 0)
             {
@@ -112,9 +112,7 @@ namespace Mail2Bug.MessageProcessingStrategies
             {
                 Logger.ErrorFormat(
                     "Exception caught while trying to apply overrides to work item {0}. Overrides: {1}\n{2}",
-                    workItemId,
-                    overrides,
-                    ex);
+                    workItemId, overrides, ex);
             }
         }
 

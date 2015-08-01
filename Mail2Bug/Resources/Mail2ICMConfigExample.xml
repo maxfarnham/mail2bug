@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0"?>
 <Config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Instances>
-    <InstanceConfig Name="ICMTest">
-      <IcmServerConfig>
+    <InstanceConfig Name="IcM tjimma">
+      <IcmClientConfig>
         <IcmUri>https://icm.ad.msft.net/Connector3/ConnectorIncidentManager.svc</IcmUri>
         <OdataServiceBaseUri>https://icm.ad.msft.net/api/cert</OdataServiceBaseUri>
         <IcmTicketTemplate>Bug</IcmTicketTemplate>
@@ -16,7 +16,46 @@
         <SimulationMode>false</SimulationMode>
         <IcmTenant>ES Ads Diagnostics</IcmTenant>
         <NamesListFieldName>Assigned To</NamesListFieldName>
-      </IcmServerConfig>
+      </IcmClientConfig>
+      <IncidentDefaults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+        <Source>
+          <SourceId>00000000-0000-0000-0000-000000000000</SourceId>
+          <Origin>Mail2IcM</Origin>
+          <CreatedBy>Mail2IcM</CreatedBy>
+          <!--<CreateDate>2015-07-31T20:12:42.2083729Z</CreateDate>-->
+          <!--<IncidentId>11505134</IncidentId>-->
+          <!--<ModifiedDate>2015-07-31T20:12:42.2083729Z</ModifiedDate>-->
+          <Revision xsi:nil="true" />
+        </Source>
+        <RoutingId>Test</RoutingId>
+        <RaisingLocation>
+          <Environment>MyEnv</Environment>
+          <DataCenter>MyDC</DataCenter>
+          <DeviceGroup>MyDG</DeviceGroup>
+          <DeviceName>MyDevice</DeviceName>
+          <ServiceInstanceId>AllMine</ServiceInstanceId>
+        </RaisingLocation>
+        <OccurringLocation>
+          <Environment>Prod</Environment>
+          <DataCenter>All</DataCenter>
+          <DeviceGroup>MyDG</DeviceGroup>
+          <DeviceName>MyDevice</DeviceName>
+          <ServiceInstanceId>AllMine</ServiceInstanceId>
+        </OccurringLocation>
+        <Description></Description>
+        <Title>Test 2015.07.29</Title>
+        <IsCustomerImpacting xsi:nil="true" />
+        <IsNoise xsi:nil="true" />
+        <IsSecurityRisk xsi:nil="true" />
+        <Severity>2</Severity>
+        <Status>Active</Status>
+        <ResolutionDate xsi:nil="true" />
+        <CommitDate xsi:nil="true" />
+        <ValueSpecifiedFields>None</ValueSpecifiedFields>
+        <ImpactStartDate>2015-07-31T20:12:42.2083729Z</ImpactStartDate>
+        <MitigatedDate xsi:nil="true" />
+        <StatusText>ACTIVE</StatusText>
+      </IncidentDefaults>
       <WorkItemSettings>
         <!-- The conversation index field should be a textual field with a capacity of 200 or more. Ideally 
              you'll create a dedicated field for this rather than overloading an existing one, to avoid
@@ -32,7 +71,120 @@
           <DefaultValueDefinition Field="DataCenter" Value="All" />
           <DefaultValueDefinition Field="Environment" Value="Prod" />
           <DefaultValueDefinition Field="Description" Value="##MessageBody" />
-          <DefaultValueDefinition Field="CreateDate" Value="##DateTime.Now" />
+          <DefaultValueDefinition Field="Status" Value="Active" />
+          <DefaultValueDefinition Field="CorrelationId" Value="0" />
+          <DefaultValueDefinition Field="RoutingId" Value="0" />
+          <DefaultValueDefinition Field="HitCount" Value="0" />
+          <DefaultValueDefinition Field="RaisingLocation" Value="Production" />
+          <DefaultValueDefinition Field="OwningTenantId" Value="Production" />
+          <DefaultValueDefinition Field="OwningTeamId" Value="Production" />
+          <DefaultValueDefinition Field="OwningContactAlias" Value="Production" />
+          <DefaultValueDefinition Field="MitigationData" Value="Production" />
+          <DefaultValueDefinition Field="ResolutionData" Value="Production" />
+          <DefaultValueDefinition Field="IsCustomerImpacting" Value="No" />
+          <DefaultValueDefinition Field="IsNoise" Value="No" />
+          <DefaultValueDefinition Field="IsSecurityRisk" Value="No" />
+          <DefaultValueDefinition Field="ReproSteps" Value="" />
+          <DefaultValueDefinition Field="TsgId" Value="" />
+          <DefaultValueDefinition Field="Component" Value="##Component" />
+          <DefaultValueDefinition Field="CustomerName" Value="#CustomerName" />
+          <DefaultValueDefinition Field="Keywords" Value="" />
+          <DefaultValueDefinition Field="ImpactStartDate" Value="##ImpactStartDate" />
+          <DefaultValueDefinition Field="IncidentType" Value="No" />
+          <DefaultValueDefinition Field="OriginatingTenantId" Value="0" />
+          <DefaultValueDefinition Field="ResponsibleTenantId" Value="0" />
+          <DefaultValueDefinition Field="ImpactedServicesIds" Value="0" />
+          <DefaultValueDefinition Field="ImpactedTeamsPublicIds" Value="0" />
+        </DefaultFieldValues>
+        <!-- 'true' means we should attached the email message that triggered the creation of the work item -->
+        <AttachOriginalMessage>true</AttachOriginalMessage>
+      </WorkItemSettings>
+      <EmailSettings>
+        <ServiceType>EWSByRecipients</ServiceType>
+        <Recipients>tjimma@microsoft.com</Recipients>
+        <EWSMailboxAddress>mail4icm@microsoft.com</EWSMailboxAddress>
+        <EWSUsername>mail4icm@microsoft.com</EWSUsername>
+        <EWSPasswordFile>.\Resources\mail4icm.bin</EWSPasswordFile>
+        <SendAckEmails>true</SendAckEmails>
+        <AckEmailsRecipientsAll>true</AckEmailsRecipientsAll>
+        <ReplyTemplate>.\Resources\ReplyTemplateICM.htm</ReplyTemplate>
+
+        <!-- Ideally, you'll never need to change these regexes and you'll use the defaults below, but they do give you 
+             the flexibility to define your own format for specifying overrides, or detecting that an email is an "append
+             only" email. Don't forget to escape any angle brackets. -->
+        <AppendOnlyEmailTitleRegex>.*(IncidentId)\s*#*\s*(?&lt;id&gt;\d+)</AppendOnlyEmailTitleRegex>
+        <AppendOnlyEmailBodyRegex>(IncidentId)\s*#*\s*(?&lt;id&gt;\d+)</AppendOnlyEmailBodyRegex>
+        <ExplicitOverridesRegex>###\s*(?&lt;fieldName&gt;[^:]*):\s*(?&lt;value&gt;.*)</ExplicitOverridesRegex>
+      </EmailSettings>
+    </InstanceConfig>
+    <InstanceConfig Name="IcM brstring">
+      <IcmClientConfig>
+        <IcmUri>https://icm.ad.msft.net/Connector3/ConnectorIncidentManager.svc</IcmUri>
+        <OdataServiceBaseUri>https://icm.ad.msft.net/api/cert</OdataServiceBaseUri>
+        <IcmTicketTemplate>Bug</IcmTicketTemplate>
+        <!-- Requested on case-by-case basis (https://icm.ad.msft.net/imp/ManageTenants.aspx). -->
+        <ConnectorId>416bc155-979d-40d4-b422-e7dbccee36f2</ConnectorId>
+        <RoutingId>email://mail2icm/user360</RoutingId>
+        <FilterOption>CreateDate gt datetime'2015-07-07T00:00:00'</FilterOption>
+        <TopOption>100</TopOption>
+        <SkipOption></SkipOption>
+        <CacheQueryFile>.\Resources\Query.wiq</CacheQueryFile>
+        <SimulationMode>false</SimulationMode>
+        <IcmTenant>ES Ads Diagnostics</IcmTenant>
+        <NamesListFieldName>Assigned To</NamesListFieldName>
+      </IcmClientConfig>
+      <IncidentDefaults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+        <Source>
+          <Origin>Mail2IcM</Origin>
+          <CreatedBy>Mail2IcM</CreatedBy>
+          <CreateDate>2015-07-31T20:12:42.2083729Z</CreateDate>
+          <ModifiedDate>2015-07-31T20:12:42.2083729Z</ModifiedDate>
+          <Revision xsi:nil="true" />
+        </Source>
+        <RoutingId>Test</RoutingId>
+        <RaisingLocation>
+          <Environment>MyEnv</Environment>
+          <DataCenter>MyDC</DataCenter>
+          <DeviceGroup>MyDG</DeviceGroup>
+          <DeviceName>MyDevice</DeviceName>
+          <ServiceInstanceId>AllMine</ServiceInstanceId>
+        </RaisingLocation>
+        <OccurringLocation>
+          <Environment>Prod</Environment>
+          <DataCenter>All</DataCenter>
+          <DeviceGroup>MyDG</DeviceGroup>
+          <DeviceName>MyDevice</DeviceName>
+          <ServiceInstanceId>AllMine</ServiceInstanceId>
+        </OccurringLocation>
+        <Description></Description>
+        <Title>Test 2015.07.29</Title>
+        <IsCustomerImpacting xsi:nil="true" />
+        <IsNoise xsi:nil="true" />
+        <IsSecurityRisk xsi:nil="true" />
+        <Severity>2</Severity>
+        <Status>Active</Status>
+        <ResolutionDate xsi:nil="true" />
+        <CommitDate xsi:nil="true" />
+        <ValueSpecifiedFields>None</ValueSpecifiedFields>
+        <ImpactStartDate>2015-07-31T20:12:42.2083729Z</ImpactStartDate>
+        <MitigatedDate xsi:nil="true" />
+        <StatusText>ACTIVE</StatusText>
+      </IncidentDefaults>
+      <WorkItemSettings>
+        <!-- The conversation index field should be a textual field with a capacity of 200 or more. Ideally 
+             you'll create a dedicated field for this rather than overloading an existing one, to avoid
+             other people/tools overwriting it with unrelated data. Also, by making it dedicated, you can
+             also make the decision to make it invisible (since no one should be editing it manually)-->
+        <ConversationIndexFieldName>ConverstionID</ConversationIndexFieldName>
+        <DefaultFieldValues>
+          <!-- The important part is to include a default value for every mandatory field, otherwise work
+               item creation will fail. The only automatically defined default is the 'Title' field, that gets
+               the email subject as a value. -->
+          <DefaultValueDefinition Field="Origin" Value="Mail2IcM Tool" />
+          <DefaultValueDefinition Field="Severity" Value="2" />
+          <DefaultValueDefinition Field="DataCenter" Value="All" />
+          <DefaultValueDefinition Field="Environment" Value="Prod" />
+          <DefaultValueDefinition Field="Description" Value="##MessageBody" />
           <DefaultValueDefinition Field="Status" Value="Active" />
           <DefaultValueDefinition Field="CorrelationId" Value="0" />
           <DefaultValueDefinition Field="RoutingId" Value="0" />
@@ -67,7 +219,7 @@
              Recipients can be specified as email addresses, or as display names
              When specifying more than one recipient, use ; as separator -->
         <ServiceType>EWSByRecipients</ServiceType>
-        <Recipients>mail4icm@microsoft.com</Recipients>
+        <Recipients>brstring@microsoft.com</Recipients>
 
         <!-- The email address whose inbox that we want to monitor -->
         <EWSMailboxAddress>mail4icm@microsoft.com</EWSMailboxAddress>

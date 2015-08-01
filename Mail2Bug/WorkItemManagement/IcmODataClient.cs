@@ -71,51 +71,36 @@
             return targetIncident;
         }
 
-        public async void ProcessAttachment(string fileName, string base64Content, long incidentId)
+        public class IncidentWrapper
         {
-            //var stream = new FileStream(fileName, FileMode.Open);
-            //Attachment attachment = new Attachment(fileName, stream);
-
+            public IncidentAttachment Attachment { get; set; }
+        }
+ 
+        public async void ProcessAttachment(long incidentId, string fileName)
+        {
             String fileAsBase64 = Convert.ToBase64String(File.ReadAllBytes(fileName));
-
-            IncidentAttachment iattachment = new IncidentAttachment();
-            iattachment.Filename = fileName;
-            iattachment.ContentsBase64 = fileAsBase64;
-            string json = JsonConvert.SerializeObject(iattachment);
-            json = "{\"Attachment\":" + json + "}";
+            IncidentWrapper wrapper = new IncidentWrapper();
+            wrapper.Attachment = IncidentAttachment.CreateIncidentAttachment(Path.GetFileName(fileName), fileAsBase64);
+            string json = JsonConvert.SerializeObject(wrapper);
 
             string createAttachementUri = "https://icm.ad.msft.net/api/cert/incidents(" + incidentId
                                           + ")/CreateAttachment";
-            Logger.DebugFormat("createAttachementUri {0}", createAttachementUri);
-
-            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(createAttachementUri);
-            httpWebRequest.ClientCertificates.Add(certificate);
-            httpWebRequest.ContentType = "application/json";
-            httpWebRequest.Method = "POST";
-
-            //WebRequestHandler handler = new WebRequestHandler();
-            //handler.ClientCertificates.Add(certificate);
-
-            //HttpClient client = new HttpClient(handler);
-            //client.BaseAddress = new Uri(createAttachementUri);
-            //client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            //var response = client.PostAsJsonAsync(createAttachementUri, iattachment);
-            //await Task.WhenAll(response);
+            Logger.DebugFormat("CreateAttachementUri {0}", createAttachementUri);
 
             try
             {
-                using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                using (WebRequestHandler handler = new WebRequestHandler())
                 {
-                    streamWriter.Write(json);
-                    streamWriter.Flush();
-                }
+                    handler.ClientCertificates.Add(certificate);
 
-                var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-                using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-                {
-                    var result = streamReader.ReadToEnd();
-                    Logger.DebugFormat("HttpResponse:{0}", result);
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        client.BaseAddress = new Uri(createAttachementUri);
+                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                        var response = client.PostAsJsonAsync(createAttachementUri, wrapper);
+                        response.Wait();
+                    }
                 }
             }
             catch (Exception ex)
@@ -129,7 +114,7 @@
             string topOption,
             string skipOption)
         {
-            string incidentsRouteUri = this.config.IcmServerConfig.OdataServiceBaseUri + "/incidents(" + incidentId
+            string incidentsRouteUri = this.config.IcmClientConfig.OdataServiceBaseUri + "/incidents(" + incidentId
                                        + ")/DescriptionEntries?$inlinecount=allpages";
 
             if (string.IsNullOrWhiteSpace(topOption) == false)
@@ -161,7 +146,7 @@
 
         public IEnumerable<Incident> SearchIncidents(string topOption, string skipOption, string filterQueryOption)
         {
-            string incidentsRouteUri = this.config.IcmServerConfig.OdataServiceBaseUri + "/incidents?$inlinecount=allpages";
+            string incidentsRouteUri = this.config.IcmClientConfig.OdataServiceBaseUri + "/incidents?$inlinecount=allpages";
 
             if (string.IsNullOrWhiteSpace(topOption) == false)
             {

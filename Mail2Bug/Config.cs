@@ -7,6 +7,8 @@ using Mail2Bug.WorkItemManagement;
 
 namespace Mail2Bug
 {
+    using Microsoft.AzureAd.Icm.Types;
+
     public class Config
     {
         public List<InstanceConfig> Instances;
@@ -18,14 +20,21 @@ namespace Mail2Bug
 
             public TfsServerConfig TfsServerConfig { get; set; }
 
-            public IcmServerConfig IcmServerConfig { get; set; }
+            public IcmClientConfig IcmClientConfig { get; set; }
 
             public WorkItemSettings WorkItemSettings { get; set; }
 
+            public AlertSourceIncident IncidentDefaults { get; set; }
+
             public EmailSettings EmailSettings { get; set; }
+
+            public override string ToString()
+            {
+                return String.Format("Name: {0}", Name);
+            }
         }
 
-        public class IcmServerConfig
+        public class IcmClientConfig
         {
             public string OdataServiceBaseUri { get; set; }
 
@@ -264,7 +273,15 @@ namespace Mail2Bug
         {
             using (var fs = new FileStream(configFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                var serializer = new XmlSerializer(typeof(Config));
+                XmlAttributes attributes = new XmlAttributes { XmlIgnore = true };
+                XmlAttributeOverrides overrides = new XmlAttributeOverrides();
+                overrides.Add(typeof(AlertSourceIncident), "CustomFields", attributes);
+
+                // Microsoft.AzureAd.Icm.Types.TenantIdentifier cannot be serialized because it does not have a parameterless constructor.
+                overrides.Add(typeof(AlertSourceIncident), "ServiceResponsible", attributes);
+                overrides.Add(typeof(AlertSourceIncident), "ImpactedServices", attributes);
+
+                var serializer = new XmlSerializer(typeof(Config), overrides);
                 return (Config)serializer.Deserialize(fs);
             }
         }

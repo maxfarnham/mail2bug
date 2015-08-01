@@ -4,9 +4,9 @@ using Mail2Bug.Email.EWS;
 
 namespace Mail2Bug.Email
 {
-    class AckEmailHandler
+    internal class AckEmailHandler
     {
-       	private readonly Config.InstanceConfig _config;
+        private readonly Config.InstanceConfig _config;
 
         public AckEmailHandler(Config.InstanceConfig config)
         {
@@ -42,16 +42,18 @@ namespace Mail2Bug.Email
             var bodyBuilder = new StringBuilder();
             bodyBuilder.Append(_config.EmailSettings.GetReplyTemplate());
 
-            if ( _config.TfsServerConfig!=null)
-             {
+            if (_config.TfsServerConfig != null)
+            {
                 bodyBuilder.Replace("[BUGID]", workItemId);
                 bodyBuilder.Replace("[TFSCollectionUri]", _config.TfsServerConfig.CollectionUri);
-             }
-            if ( _config.IcmServerConfig!=null)
-              {
+            }
+            
+            if (_config.IcmClientConfig != null)
+            {
                 bodyBuilder.Replace("[IncidentId]", workItemId);
-                bodyBuilder.Replace("[TFSCollectionUri]", _config.IcmServerConfig.IcmUri);
-              }
+                bodyBuilder.Replace("[TFSCollectionUri]", _config.IcmClientConfig.IcmUri);
+            }
+ 
             return bodyBuilder.ToString();
         }
 

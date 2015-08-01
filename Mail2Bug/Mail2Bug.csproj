@@ -196,7 +196,7 @@
       <DependentUpon>Reference.datasvcmap</DependentUpon>
     </Compile>
     <Compile Include="TestHelpers\RandomDataHelper.cs" />
-    <Compile Include="WorkItemManagement\DataServiceODataClient.cs" />
+    <Compile Include="WorkItemManagement\IcmODataClient.cs" />
     <Compile Include="WorkItemManagement\FieldNames.cs" />
     <Compile Include="WorkItemManagement\IcmWorkItemManager.cs" />
     <Compile Include="WorkItemManagement\IWorkItemManager.cs" />
