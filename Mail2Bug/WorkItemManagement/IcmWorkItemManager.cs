@@ -261,40 +261,24 @@
                 connectorClient = ConnectToIcmInstance();
             }
 
-            incident.ServiceResponsible = new TenantIdentifier("ES Ads Diagnostics");
+            //incident.ServiceResponsible = new TenantIdentifier("ES Ads Diagnostics");
 
             const RoutingOptions RoutingOptions = RoutingOptions.None;
             long id = 0;
 
-            try
-            {
                 // If the following exception is thrown while debugging, open Visual Studio as Administrator.
                 // Additional information: Could not establish secure channel for SSL/TLS with authority 'icm.ad.msft.net'.
                 IncidentAddUpdateResult result = connectorClient.AddOrUpdateIncident2(
-                    config.IcmClientConfig.ConnectorId,
-                    incident,
-                    RoutingOptions);
+                                                                                        config.IcmClientConfig.ConnectorId,
+                                                                                        incident,
+                                                                                        RoutingOptions);
                 if (result != null)
                 {
                     id = result.IncidentId.Value;
+                    CacheWorkItem(dataServiceClient.GetIncident(id));
                 }
-            }
-            catch (FaultException<IcmFault> icmFault)
-            {
-                Logger.ErrorFormat("Exception caught while creating an incident \n{0}", icmFault);
-            }
-            catch (FaultException unknownFault)
-            {
-                Logger.ErrorFormat("Exception caught while creating an incident \n{0}", unknownFault);
-            }
-            catch (Exception ex)
-            {
-                Logger.ErrorFormat("Exception caught while creating an incident \n{0}", ex);
-            }
-
             return id;
-        }
-
+         }
         public void ModifyWorkItem(long workItemId, string comment, Dictionary<string, string> values)
         {
             if (workItemId <= 0)
