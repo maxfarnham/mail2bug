@@ -52,18 +52,18 @@ namespace Mail2Bug
             public string RoutingId { get; set; }
 
             // Template to create a ICM ticket.
-            public string IcmTicketTemplate { get; set; }
+           // public string IcmTicketTemplate { get; set; }
 
             // The query to be used for populating the cache used for connecting outlook conversations to bugs.
             // If a work item is not captured by the query, the connection between conversation and work item would 
             // fail (and a new work item will be created instead of updating the existing one)
-            public string CacheQueryFile { get; set; }
+           // public string CacheQueryFile { get; set; }
 
             // Used for testing purposes and wouldn't create any ICM tickets. 
             public bool SimulationMode { get; set; }
 
             // The name of the field which contains all the allowed names in its allowed values list (usually "Assigned To")
-            public string NamesListFieldName { get; set; }
+            //public string NamesListFieldName { get; set; }
 
             // Team ticket will be assigned to in ICM.
             public string IcmTenant { get; set; }

@@ -22,15 +22,12 @@
     {
         private const string ToolName = "Mail2IcM";
         private const string CertThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
-
         private static readonly ILog Logger = LogManager.GetLogger(typeof(TFSWorkItemManager));
-
         private readonly Config.InstanceConfig config;
         private readonly DateTime dateHolder;
         private readonly INameResolver nameResolver;
         private readonly DataServiceODataClient dataServiceClient;
         private readonly AlertSourceIncident incidentDefaults;
-
         private ConnectorIncidentManagerClient connectorClient;
 
         public SortedList<string, long> WorkItemsCache { get; private set; }
@@ -91,8 +88,6 @@
 
             ValidateConfigString(icmConfig.IcmUri, "IcmClientConfig.IcmUri");
             ValidateConfigString(icmConfig.IcmTenant, "IcmClientConfig.IcmTenant");
-            ValidateConfigString(icmConfig.IcmTicketTemplate, "IcmClientConfig.IcmTicketTemplate");
-            ValidateConfigString(icmConfig.NamesListFieldName, "IcmClientConfig.NamesListFieldName");
             ValidateConfigString(
                 config.WorkItemSettings.ConversationIndexFieldName,
                 "WorkItemSettings.ConversationIndexFieldName");
@@ -215,20 +210,21 @@
             WorkItemsCache[keyField] = workItem.Id;
         }
 
-        public AlertSourceIncident CreateIncidentWithDefaults()
+        public AlertSourceIncident CreateIncidentWithDefaults(Dictionary<string, string> values)
         {
             AlertSourceIncident incident = new AlertSourceIncident();
-            incident.ImpactStartDate = incidentDefaults.ImpactStartDate;
-            incident.Title = incidentDefaults.Title;
+            incident.ImpactStartDate = Convert.ToDateTime(values[FieldNames.Incident.CreateDate]);
+            incident.Title = values[FieldNames.Incident.Title]; 
             incident.Severity = incidentDefaults.Severity;
-            incident.Description = incidentDefaults.Description;
-            incident.Keywords = incidentDefaults.Keywords;
+            incident.Description = values[FieldNames.Incident.Description];
+                //incidentDefaults.Description;
+            incident.Keywords = values["ConverstionID"];
             incident.Source = new AlertSourceInfo
             {
-                CreatedBy = incidentDefaults.Source.CreatedBy,
-                CreateDate = incidentDefaults.Source.CreateDate,
+                CreatedBy = values[FieldNames.Incident.CreatedBy],
+                CreateDate = DateTime.UtcNow,
                 IncidentId = Guid.NewGuid().ToString(),
-                ModifiedDate = incidentDefaults.Source.ModifiedDate,
+                ModifiedDate = DateTime.UtcNow,
                 Origin = incidentDefaults.Source.Origin
             };
             incident.OccurringLocation = new IncidentLocation
@@ -247,7 +243,7 @@
                 Environment = incidentDefaults.RaisingLocation.Environment,
                 ServiceInstanceId = incidentDefaults.RaisingLocation.ServiceInstanceId
             };
-            incident.RoutingId = incidentDefaults.RoutingId;
+            incident.RoutingId = config.IcmClientConfig.RoutingId;
             incident.Status = incidentDefaults.Status;
 
             return incident;
@@ -255,7 +251,7 @@
 
         public long CreateWorkItem(Dictionary<string, string> values)
         {
-            AlertSourceIncident incident = this.CreateIncidentWithDefaults();
+            AlertSourceIncident incident = this.CreateIncidentWithDefaults(values);
             if (connectorClient == null)
             {
                 connectorClient = ConnectToIcmInstance();

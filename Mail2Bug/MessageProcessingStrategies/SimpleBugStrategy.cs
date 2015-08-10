@@ -83,11 +83,17 @@ namespace Mail2Bug.MessageProcessingStrategies
         {
             var resolver = new SpecialValueResolver(message, _workItemManager.GetNameResolver());
 
-            workItemUpdates["Title"] = resolver.Subject;
+            //workItemUpdates["Title"] = resolver.Subject;
+            workItemUpdates[FieldNames.Incident.CreatedBy] = resolver.SenderAlias;
+            workItemUpdates[FieldNames.Incident.Title] = resolver.Subject;
+            workItemUpdates[FieldNames.Incident.Description] = resolver.MessageBody;
+            workItemUpdates[FieldNames.Incident.CreateDate] = message.SentOn.ToUniversalTime().ToString();
+            
             var rawConversationIndex = message.ConversationIndex;
             workItemUpdates[_config.WorkItemSettings.ConversationIndexFieldName] = rawConversationIndex.Substring(
                 0,
                 Math.Min(rawConversationIndex.Length, TfsTextFieldMaxLength));
+           
 
             foreach (var defaultFieldValue in _config.WorkItemSettings.DefaultFieldValues)
             {

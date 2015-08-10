@@ -13,6 +13,7 @@ namespace Mail2Bug.MessageProcessingStrategies
 
         public const string SubjectKeyword = "##Subject";
         public const string SenderKeyword = "##Sender";
+        public const string SenderAliasKeyword = "##SenderAlias";
         public const string MessageBodyKeyword = "##MessageBody";
         public const string MessageBodyWithSenderKeyword = "##MessageBodyWithSender";
         public const string RawMessageBodyKeyword = "##RawMessageBody";
@@ -30,6 +31,7 @@ namespace Mail2Bug.MessageProcessingStrategies
             _valueResolutionMap = new Dictionary<string, string>();
             _valueResolutionMap[SubjectKeyword] = GetValidSubject(message);
             _valueResolutionMap[SenderKeyword] = GetSender(message);
+            _valueResolutionMap[SenderAliasKeyword] = GetSenderAlias(message);
             _valueResolutionMap[MessageBodyKeyword] = TextUtils.FixLineBreaks(message.PlainTextBody);
             _valueResolutionMap[MessageBodyWithSenderKeyword] =
                 String.Format("{0}\n\nCreated by: {1} ({2})", 
@@ -43,6 +45,17 @@ namespace Mail2Bug.MessageProcessingStrategies
             _valueResolutionMap[StartTimeKeyword] = GetValidTimeString(message.StartTime);
             _valueResolutionMap[EndTimeKeyword] = GetValidTimeString(message.EndTime);
         }
+
+        private string GetSenderAlias(IIncomingEmailMessage message)
+            {
+            var resolvedName = message.SenderAlias;
+            if (!string.IsNullOrEmpty(resolvedName))
+                {
+                    Logger.InfoFormat("Alias '{0}', resolved to {1}", message.SenderAlias, resolvedName);
+                    return resolvedName;
+                }
+            return string.Empty;
+            }
 
 
         /// Gets a keyword and returns its associated value.
@@ -64,6 +77,9 @@ namespace Mail2Bug.MessageProcessingStrategies
         // "Easy-access" properties to get specific values
         public string Subject { get { return _valueResolutionMap[SubjectKeyword]; } }
         public string Sender { get { return _valueResolutionMap[SenderKeyword]; } }
+
+        public string SenderAlias { get { return _valueResolutionMap[SenderAliasKeyword]; } }
+
         public string MessageBody { get { return _valueResolutionMap[MessageBodyKeyword]; } }
         public string RawMessageBody { get { return _valueResolutionMap[RawMessageBodyKeyword]; } }
         public string Location { get { return _valueResolutionMap[LocationKeyword]; } }
