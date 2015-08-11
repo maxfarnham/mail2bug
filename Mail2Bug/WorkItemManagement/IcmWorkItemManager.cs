@@ -22,7 +22,7 @@
     {
         private const string ToolName = "Mail2IcM";
         private const string CertThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
-        private static readonly ILog Logger = LogManager.GetLogger(typeof(TFSWorkItemManager));
+        private static readonly ILog Logger = LogManager.GetLogger(typeof(IcmWorkItemManagment));
         private readonly Config.InstanceConfig config;
         private readonly DateTime dateHolder;
         private readonly INameResolver nameResolver;
