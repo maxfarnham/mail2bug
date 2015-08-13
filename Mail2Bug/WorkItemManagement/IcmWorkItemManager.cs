@@ -262,16 +262,18 @@
             const RoutingOptions RoutingOptions = RoutingOptions.None;
             long id = 0;
 
+           // id = 11715802;
+
                 // If the following exception is thrown while debugging, open Visual Studio as Administrator.
                 // Additional information: Could not establish secure channel for SSL/TLS with authority 'icm.ad.msft.net'.
-                IncidentAddUpdateResult result = connectorClient.AddOrUpdateIncident2(
-                                                                                        config.IcmClientConfig.ConnectorId,
-                                                                                        incident,
-                                                                                        RoutingOptions);
-                if (result != null)
+            IncidentAddUpdateResult result = connectorClient.AddOrUpdateIncident2(
+                                                                                      config.IcmClientConfig.ConnectorId,
+                                                                                      incident,
+                                                                                      RoutingOptions);
+            if (result != null)
                 {
-                    id = result.IncidentId.Value;
-                    CacheWorkItem(dataServiceClient.GetIncident(id));
+                id = result.IncidentId.Value;
+                    // CacheWorkItem(id);
                 }
             return id;
          }
