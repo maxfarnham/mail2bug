@@ -83,6 +83,7 @@
     <Compile Include="RecipientsMailboxManagerRouterUnitTest.cs" />
     <Compile Include="SimpleBugStrategyUnitTest.cs" />
     <Compile Include="TfsQueryParserUnitTest.cs" />
+    <Compile Include="WorkItemManagement\IcmODataClientTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

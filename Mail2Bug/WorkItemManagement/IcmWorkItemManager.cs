@@ -59,7 +59,7 @@
             dateHolder = DateTime.UtcNow;
         }
 
-        public X509Certificate RetrieveCertificate(string certThumbprint)
+        public static X509Certificate RetrieveCertificate(string certThumbprint)
         {
             var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
             store.Open(OpenFlags.ReadOnly);

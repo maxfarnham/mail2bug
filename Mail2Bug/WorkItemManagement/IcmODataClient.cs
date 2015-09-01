@@ -71,17 +71,16 @@
             return targetIncident;
         }
 
-        public class IncidentWrapper
+        public class AttachmentWrapper
         {
             public IncidentAttachment Attachment { get; set; }
         }
  
-        public async void ProcessAttachment(long incidentId, string fileName)
+        public async Task ProcessAttachment(long incidentId, string fileName)
         {
             String fileAsBase64 = Convert.ToBase64String(File.ReadAllBytes(fileName));
-            IncidentWrapper wrapper = new IncidentWrapper();
-            wrapper.Attachment = IncidentAttachment.CreateIncidentAttachment(Path.GetFileName(fileName), fileAsBase64);
-            string json = JsonConvert.SerializeObject(wrapper);
+            AttachmentWrapper payload = new AttachmentWrapper();
+            payload.Attachment = IncidentAttachment.CreateIncidentAttachment(Path.GetFileName(fileName), fileAsBase64);
 
             string createAttachementUri = "https://icm.ad.msft.net/api/cert/incidents(" + incidentId
                                           + ")/CreateAttachment";
@@ -98,14 +97,14 @@
                         client.BaseAddress = new Uri(createAttachementUri);
                         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                        var response = client.PostAsJsonAsync(createAttachementUri, wrapper);
-                        response.Wait();
+                        var response = await client.PostAsJsonAsync(createAttachementUri, payload);
+                        Logger.InfoFormat(response.ToString());
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                Logger.ErrorFormat(ex.ToString());
             }
         }
 

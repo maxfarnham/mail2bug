@@ -30,7 +30,7 @@ namespace Mail2Bug
         {
             _config = configInstance;
 
-            Logger.InfoFormat("Initalizing MailboxManager");
+            Logger.InfoFormat("Initializing MailboxManager");
             _mailboxManager = mailboxManagerFactory.CreateMailboxManager(_config.EmailSettings);
 
             Logger.InfoFormat("Initializing WorkItemManager");
