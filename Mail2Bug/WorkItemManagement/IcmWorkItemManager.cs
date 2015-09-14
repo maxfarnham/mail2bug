@@ -34,6 +34,7 @@
 
         public IcmWorkItemManagment(Config.InstanceConfig instanceConfig)
         {
+            Logger.InfoFormat("Creating IcM work item manager...");
             ValidateConfig(instanceConfig);
             config = instanceConfig;
             incidentDefaults = config.IncidentDefaults;
@@ -51,12 +52,9 @@
                 throw new Exception("Cannot initialize IcM Webservice.");
             }
 
-            Logger.InfoFormat("Connected to IcM.");
-
-            Logger.InfoFormat("Initializing WorkItems Cache.");
-            InitTicketCache();
             nameResolver = InitNameResolver();
             dateHolder = DateTime.UtcNow;
+            Logger.InfoFormat("Completed creating IcM work item manager.");
         }
 
         public static X509Certificate RetrieveCertificate(string certThumbprint)
@@ -97,10 +95,10 @@
         {
             try
             {
-                Logger.InfoFormat("Connecting to IcM '{0}' using certificate '{1}'.",
+                Logger.InfoFormat("Connecting to IcM '{0}' using certificate '{1}'...",
                     config.IcmClientConfig.IcmUri, CertThumbprint);
                 var icmServer = CreateConnectorClient(config.IcmClientConfig.IcmUri);
-                Logger.InfoFormat("Successfully connected to IcM");
+                Logger.InfoFormat("Successfully connected to IcM.");
                 return icmServer;
             }
             catch (Exception ex)
@@ -143,30 +141,6 @@
             return client;
         }
 
-        private void InitTicketCache()
-        {
-            Logger.InfoFormat("Initializing IcM Ticket cache...");
-            WorkItemsCache = new SortedList<string, long>();
-
-            var itemsToCache = dataServiceClient.SearchIncidents(
-                config.IcmClientConfig.TopOption,
-                config.IcmClientConfig.SkipOption,
-                config.IcmClientConfig.FilterOption).ToArray();
-            Logger.InfoFormat("{0} items retrieved by IcM cache query.", itemsToCache.Count());
-            
-            foreach (IcmIncidentsApiODataReference.Incident workItem in itemsToCache)
-            {
-                try
-                {
-                    CacheWorkItem(workItem.Id);
-                }
-                catch (Exception ex)
-                {
-                    Logger.ErrorFormat("Exception caught while caching Incident with id {0}\n{1}", workItem.Id, ex);
-                }
-            }
-        }
-
         private static void ValidateConfigString(string value, string configValueName)
         {
             if (string.IsNullOrEmpty(value))
@@ -185,29 +159,9 @@
 
         public void CacheWorkItem(long workItemId)
         {
-            if (WorkItemsCache.ContainsValue(workItemId))
-            {
-                return;
-            }
-
-            CacheWorkItem(dataServiceClient.GetIncident(workItemId));
-        }
-
-        public void CacheWorkItem(IcmIncidentsApiODataReference.Incident workItem)
-        {
-            var keyField = config.WorkItemSettings.ConversationIndexFieldName;
-            if (string.IsNullOrEmpty(keyField))
-            {
-                Logger.WarnFormat(
-                    "Problem caching work item {0}. Field '{1}' is empty - using ID instead.",
-                    workItem.Id,
-                    keyField);
-                WorkItemsCache[workItem.Id.ToString(CultureInfo.InvariantCulture)] = workItem.Id;
-            }
-
-            var keyFieldValue = workItem.Keywords;
-            Logger.DebugFormat("Work item {0} conversation ID is {1}", workItem.Id, keyFieldValue);
-            WorkItemsCache[keyField] = workItem.Id;
+            // No operation needed. 
+            // IcM incidents will not be cached but rather retrieved live from the IcM service.
+            // Retrieving live is a best effort to ensure incident is the most current version of incident. 
         }
 
         public AlertSourceIncident CreateIncidentWithDefaults(Dictionary<string, string> values)

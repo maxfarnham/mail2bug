@@ -5,26 +5,16 @@
     using System.Data.Services.Client;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Security.Cryptography.X509Certificates;
-    using System.Text;
-    using System.Threading.Tasks;
 
     using log4net;
 
-    using Mail2Bug.IcmIncidentsApiODataReference;
-    using Mail2Bug.IcmOnCallApiODataReference.Microsoft.AzureAd.Icm.ODataApi.Models;
-
-    using Microsoft.AzureAd.Icm.Types;
-    using Microsoft.Exchange.WebServices.Data;
-
-    using Newtonsoft.Json;
-
-    using Attachment = Microsoft.AzureAd.Icm.Types.Attachment;
-    using DescriptionEntry = Mail2Bug.IcmIncidentsApiODataReference.DescriptionEntry;
-    using Incident = Mail2Bug.IcmIncidentsApiODataReference.Incident;
+    using IcmIncidentsApiODataReference;
+    using IcmOnCallApiODataReference.Microsoft.AzureAd.Icm.ODataApi.Models;
+    using DescriptionEntry = IcmIncidentsApiODataReference.DescriptionEntry;
+    using Incident = IcmIncidentsApiODataReference.Incident;
     using Task = System.Threading.Tasks.Task;
 
     public class DataServiceODataClient
@@ -157,6 +147,8 @@
                 incidentsRouteUri += "&$skip=" + skipOption;
             }
 
+            filterQueryOption = string.Format("CreateDate gt datetime'{0}'", DateTime.UtcNow.AddDays(-30).ToString("yyyy-MM-ddTHH:mm:ss"));
+
             if (string.IsNullOrWhiteSpace(filterQueryOption) == false)
             {
                 incidentsRouteUri += "&$filter=" + filterQueryOption;
@@ -165,15 +157,16 @@
             QueryOperationResponse<Incident> response = null;
             try
             {
+                Logger.InfoFormat("Executing request: '{0}'...", incidentsRouteUri);
                 Uri request = new Uri(incidentsRouteUri);
                 response = (QueryOperationResponse<Incident>)odataClient.Execute<Incident>(request);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.InnerException.ToString());
+                Logger.ErrorFormat("Failed to execute request: {0}", ex.InnerException);
             }
 
-            while (true)
+            while (response != null)
             {
                 foreach (Incident incident in response)
                 {
@@ -186,8 +179,11 @@
                     yield break;
                 }
 
+                Logger.InfoFormat("Continue to next page of request...");
                 response = odataClient.Execute(continuation);
             }
+
+            Logger.InfoFormat("Completed executing request.");
         }
 
         public void UpdateIncident(Incident incident)

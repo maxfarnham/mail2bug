@@ -79,10 +79,9 @@ namespace Mail2Bug
                 var messageProcessedSuccessfully = true;
                 try
                 {
-                    Logger.InfoFormat("Processing message {0}", message.Subject);
-                    Logger.DebugFormat("Message sent on {0}", message.SentOn.ToLocalTime());
+                    Logger.InfoFormat("Processing message: Subject: {0}", message.Subject);
                     _messageProcessingStrategy.Value.ProcessInboxMessage(message);
-                    Logger.InfoFormat("Message '{0}' processed successfully, moving to next message", message.Subject);
+                    Logger.InfoFormat("Message processed successfully.");
                 }
                 catch (Exception exception)
                 {
@@ -104,7 +103,6 @@ namespace Mail2Bug
                 && (_config.IncidentDefaults != null) 
                 && !_config.IcmClientConfig.SimulationMode)
             {
-                Logger.InfoFormat("Working to create ICMWorkitem Manager");
                 workItemManager = new IcmWorkItemManagment(_config);
             }
             if (_config.TfsServerConfig != null && !_config.TfsServerConfig.SimulationMode)

@@ -19,7 +19,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\~Build\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -148,7 +148,7 @@
     <Compile Include="Email\AckEmailHandler.cs" />
     <Compile Include="Email\EmailBodyProcessingUtils.cs" />
     <Compile Include="Email\EWS\ArchiverMessagePostProcessor.cs" />
-    <Compile Include="Email\EWS\EWSConnectionManger.cs" />
+    <Compile Include="Email\EWS\EWSConnectionManager.cs" />
     <Compile Include="Email\EWS\EWSIncomingFileAttachment.cs" />
     <Compile Include="Email\EWS\EWSIncomingItemAttachment.cs" />
     <Compile Include="Email\EWS\EWSIncomingMessage.cs" />
@@ -163,7 +163,6 @@
     <Compile Include="Email\IIncomingEmailAttachment.cs" />
     <Compile Include="Email\IIncomingEmailMessage.cs" />
     <Compile Include="Email\IMailboxManager.cs" />
-    <Compile Include="Email\IMailSender.cs" />
     <Compile Include="Email\MailboxManagerFactory.cs" />
     <Compile Include="ExceptionClasses\BadConfigException.cs" />
     <Compile Include="ExceptionClasses\MailFolderNotFoundException.cs" />
@@ -212,6 +211,8 @@
     <None Include="log4net.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="Mail2Bug.IcmIncidentsApiODataReference.Container1.datasource" />
+    <None Include="Mail2Bug.IcmOnCallApiODataReference.Container1.datasource" />
     <None Include="packages.config" />
     <None Include="Resources\pubbugs.bin">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

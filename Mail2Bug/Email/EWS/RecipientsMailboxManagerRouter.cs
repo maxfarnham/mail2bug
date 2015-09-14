@@ -57,25 +57,28 @@ namespace Mail2Bug.Email.EWS
                 clientData.Value.Messages.Clear();
             }
 
-            var messages = _folder.GetMessages().OrderBy(message => message.ReceivedOn).ToArray();
+            var messages = _folder.GetMessages().ToArray();
+            messages = messages.OrderBy(message => message.ReceivedOn).ToArray();
             
             foreach (var message in messages)
             {
+                bool messageAssigned = false;
                 foreach (var clientData in _clients)
                 {
                     if (clientData.Value.Evaluator(message))
                     {
-                        Logger.InfoFormat(
-                            "Adding message to client queue: Client ID {0}; subject: {1}",
-                            clientData.Key,
-                            message.Subject);
-
+                        Logger.InfoFormat("Adding message to client queue: ConversationIndex: {0}, Client ID: {1}, Subject: '{2}'"
+                            , message.ConversationIndex, clientData.Key, message.Subject);
                         clientData.Value.Messages.Add(message);
-                        return;
+                        messageAssigned = true;
                     }
                 }
 
-                Logger.InfoFormat("Message doesn't fit to any client. Subject: {0}", message.Subject);
+                if (!messageAssigned)
+                {
+                    Logger.InfoFormat("Message doesn't match any client: Subject: '{0}'", message.Subject);
+                    this.RogueMessages.Add(message);
+                }
             }
 
             Logger.InfoFormat("Finished processing inbox for RecipientsMailboxManagerRouter");
@@ -91,6 +94,7 @@ namespace Mail2Bug.Email.EWS
         private readonly IMailFolder _folder;
         private readonly Dictionary<int, ClientData> _clients = new Dictionary<int, ClientData>();
         private int _nextId = 100;
+        public List<IIncomingEmailMessage> RogueMessages = new List<IIncomingEmailMessage>();
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(RecipientsMailboxManagerRouter));
     }

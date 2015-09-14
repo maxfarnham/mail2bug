@@ -155,10 +155,11 @@ namespace Mail2Bug
             if (!useThreads)
             {
                 RunInstancesSingleThreaded();
-                return;
             }
-
-            RunInstancesMultithreaded();
+            else
+            {
+                RunInstancesMultithreaded();
+            }
         }
 
         private static void RunInstancesSingleThreaded()
@@ -205,7 +206,7 @@ namespace Mail2Bug
         private static void InitInstances(IEnumerable<Config> configs)
         {
             _instances = new List<IInstanceRunner>();
-            _ewsConnectionManger = new EWSConnectionManger(true);
+            _ewsConnectionManger = new EWSConnectionManager(true);
             var mailboxManagerFactory = new MailboxManagerFactory(_ewsConnectionManger);
 
             foreach (var config in configs)
@@ -252,6 +253,6 @@ namespace Mail2Bug
         private static TimeSpan _timeoutPerIteration = TimeSpan.FromMinutes(30);
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof (MainApp));
-        private static EWSConnectionManger _ewsConnectionManger;
+        private static EWSConnectionManager _ewsConnectionManger;
     }
 }

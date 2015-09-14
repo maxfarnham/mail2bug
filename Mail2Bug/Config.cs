@@ -67,6 +67,11 @@ namespace Mail2Bug
 
             // Team ticket will be assigned to in ICM.
             public string IcmTenant { get; set; }
+
+            public override string ToString()
+            {
+                return String.Format("IcmTenant: {0}", IcmTenant);
+            }
         }
 
         public class TfsServerConfig
@@ -282,7 +287,9 @@ namespace Mail2Bug
                 overrides.Add(typeof(AlertSourceIncident), "ImpactedServices", attributes);
 
                 var serializer = new XmlSerializer(typeof(Config), overrides);
-                return (Config)serializer.Deserialize(fs);
+                var configObject = (Config)serializer.Deserialize(fs);
+                configObject.Name = Path.GetFileNameWithoutExtension(configFilePath);
+                return configObject;
             }
         }
 
@@ -302,6 +309,13 @@ namespace Mail2Bug
             {
                 return r.ReadToEnd();
             }
+        }
+
+        public string Name;
+
+        public override string ToString()
+        {
+            return String.Format("Name: {0}", Name);
         }
     }
 }

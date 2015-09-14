@@ -10,6 +10,7 @@ namespace Mail2Bug.Email.EWS
     public class EWSIncomingMessage : IIncomingEmailMessage
     {
         private readonly EmailMessage _message;
+        public EmailMessage Message => this._message;
 
         public EWSIncomingMessage(EmailMessage message)
         {
@@ -44,7 +45,15 @@ namespace Mail2Bug.Email.EWS
 
         public string ConversationIndex
         {
-            get { return string.Join("", _message.ConversationIndex.Select(b => b.ToString("X2"))); }
+            get
+            {
+                return GetConversationIndex(_message);
+            }
+        }
+
+        public static string GetConversationIndex(EmailMessage message)
+        {
+            return string.Join("", message.ConversationIndex.Select(b => b.ToString("X2")));
         }
 
         public string SenderName { get { return _message.Sender.Name; } }
@@ -171,7 +180,8 @@ namespace Mail2Bug.Email.EWS
             }
 
             Logger.DebugFormat("address={0}",address);
-            var aliasFromEmailAddress = address.Substring(0, address.IndexOf('@'));
+            var indexOfAt = address.IndexOf('@');
+            var aliasFromEmailAddress = indexOfAt < 0 ? address : address.Substring(0, indexOfAt);
 
             return string.IsNullOrEmpty(aliasFromEmailAddress) ? address : aliasFromEmailAddress;
         }

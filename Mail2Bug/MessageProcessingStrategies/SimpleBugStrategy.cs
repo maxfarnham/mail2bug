@@ -40,10 +40,11 @@ namespace Mail2Bug.MessageProcessingStrategies
             if (!workItemId.HasValue) // thread not found, new work item
             {
                 NewWorkItem(message);
-                return;
             }
-
-            UpdateWorkItem(message, workItemId.Value);
+            else
+            {
+                UpdateWorkItem(message, workItemId.Value);
+            }
         }
 
         private void NewWorkItem(IIncomingEmailMessage message)
@@ -76,6 +77,7 @@ namespace Mail2Bug.MessageProcessingStrategies
             {
                 Logger.ErrorFormat("Exception caught while applying settings to work item {0}\n{1}", workItemId, ex);
             }
+
             _ackEmailHandler.SendAckEmail(message, workItemId.ToString(CultureInfo.InvariantCulture));
         }
 

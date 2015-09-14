@@ -12,14 +12,14 @@ namespace Mail2Bug.Email
     /// </summary>
     class MailboxManagerFactory
     {
-        public MailboxManagerFactory(EWSConnectionManger connectionManger)
+        public MailboxManagerFactory(EWSConnectionManager connectionManger)
         {
             _connectionManger = connectionManger;
         }
 
         public IMailboxManager CreateMailboxManager(Config.EmailSettings emailSettings)
         {
-            var credentials = new EWSConnectionManger.Credentials
+            var credentials = new EWSConnectionManager.Credentials
             {
                 EmailAddress = emailSettings.EWSMailboxAddress,
                 UserName = emailSettings.EWSUsername,
@@ -72,6 +72,6 @@ namespace Mail2Bug.Email
         }
 
         // Enable connection caching for performance improvement when hosting multiple instances
-        private readonly EWSConnectionManger _connectionManger;
+        private readonly EWSConnectionManager _connectionManger;
     }
 }
