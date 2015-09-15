@@ -110,8 +110,17 @@ namespace Mail2Bug.Email.EWS
                 rogueMessageFolder = Folder.Bind(ewsConnection.Service, WellKnownFolderName.DeletedItems);
             }
 
-            var previouslyProcessedRogueMessages = ewsConnection.Service.FindItems(rogueMessageFolder.Id, new ItemView(1000)).
-                Select(i => new EWSIncomingMessage((EmailMessage)i).ConversationTopic).ToArray();
+            string[] previouslyProcessedRogueMessages;
+            try
+            {
+                previouslyProcessedRogueMessages = ewsConnection.Service.FindItems(rogueMessageFolder.Id, new ItemView(1000)).
+                    Select(i => new EWSIncomingMessage((EmailMessage)i).ConversationTopic).ToArray();
+            }
+            catch (Exception e)
+            {
+                Logger.ErrorFormat("Failed to connect to mailbox server. Will retry on next iteration. {0}", e);
+                return;
+            }
 
             var rogueMessages = ewsConnection.Router.RogueMessages;
             Logger.InfoFormat("Replying to {0} rogue messages without configuration and moving to '{1}' folder...",
