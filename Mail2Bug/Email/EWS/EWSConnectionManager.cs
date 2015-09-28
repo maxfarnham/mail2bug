@@ -101,6 +101,7 @@ namespace Mail2Bug.Email.EWS
 
         private static void ProcessRogueMessages(EWSConnection ewsConnection)
         {
+            Logger.InfoFormat("Processing rogue messages...");
             var folderName = "Rogue Messages";
             var folders = ewsConnection.Service.FindFolders(WellKnownFolderName.Inbox, new FolderView(100));
             var rogueMessageFolder = folders.SingleOrDefault(f => f.DisplayName == folderName);
@@ -109,6 +110,16 @@ namespace Mail2Bug.Email.EWS
                 Logger.InfoFormat("Could not find folder '{0}' on server. Using 'Deleted Items' instead.", folderName);
                 rogueMessageFolder = Folder.Bind(ewsConnection.Service, WellKnownFolderName.DeletedItems);
             }
+
+            var rogueMessages = ewsConnection.Router.RogueMessages;
+            if (rogueMessages.Count == 0)
+            {
+                Logger.InfoFormat("No rogue messages found.");
+                return;
+            }
+
+            Logger.InfoFormat("Replying to {0} rogue messages without configuration and moving to '{1}' folder...",
+                rogueMessages.Count, rogueMessageFolder.DisplayName);
 
             string[] previouslyProcessedRogueMessages;
             try
@@ -122,9 +133,6 @@ namespace Mail2Bug.Email.EWS
                 return;
             }
 
-            var rogueMessages = ewsConnection.Router.RogueMessages;
-            Logger.InfoFormat("Replying to {0} rogue messages without configuration and moving to '{1}' folder...",
-                rogueMessages.Count, rogueMessageFolder.DisplayName);
             foreach (var message in rogueMessages)
             {
                 var ewsMessage = message as EWSIncomingMessage;

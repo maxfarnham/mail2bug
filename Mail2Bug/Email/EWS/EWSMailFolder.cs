@@ -26,7 +26,6 @@ namespace Mail2Bug.Email.EWS
         {
             Logger.InfoFormat("Getting email messages...");
             var itemCount = _folder.TotalCount;
-            Logger.InfoFormat("Items found: {0}", itemCount);
             if (itemCount <= 0)
             {
                 return new List<IIncomingEmailMessage>();
@@ -34,6 +33,7 @@ namespace Mail2Bug.Email.EWS
 
             var view = new ItemView(itemCount);
             var items = _folder.FindItems(view);
+            Logger.InfoFormat("Items found: {0}", items.Count());
 
             var messages = new List<IIncomingEmailMessage>();
             int junkCount = 0;
