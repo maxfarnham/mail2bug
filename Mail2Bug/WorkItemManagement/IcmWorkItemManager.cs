@@ -17,11 +17,15 @@
 
     using Microsoft.AzureAd.Icm.Types;
     using Microsoft.AzureAd.Icm.WebService.Client;
+    using Microsoft.AzureAd.Icm.XhtmlUtility;
 
     public class IcmWorkItemManagment : IWorkItemManager
     {
         private const string ToolName = "Mail2IcM";
         private const string CertThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
+        private const string EndpointUrl = "https://mail2icm.documents.azure.com:443/";
+        private const string AuthorizationKey = "hvJ1gGUBL9gAyhsM9so3WFuNdsTF3QcFKqHDr3AgMUWI5iS5ulPfnlKT6preZGIAGXIoZ5CtN+005bj4Uk0+Ag==";
+
         private static readonly ILog Logger = LogManager.GetLogger(typeof(IcmWorkItemManagment));
         private readonly Config.InstanceConfig config;
         private readonly DateTime dateHolder;
@@ -52,9 +56,18 @@
                 throw new Exception("Cannot initialize IcM Webservice.");
             }
 
+            InitWorkItemsCache();
+
             nameResolver = InitNameResolver();
             dateHolder = DateTime.UtcNow;
             Logger.InfoFormat("Completed creating IcM work item manager.");
+        }
+
+        private void InitWorkItemsCache()
+        {
+            Logger.InfoFormat("Initializing work items cache");
+
+            WorkItemsCache = new SortedList<string, long>();
         }
 
         public static X509Certificate RetrieveCertificate(string certThumbprint)
@@ -168,10 +181,12 @@
         {
             AlertSourceIncident incident = new AlertSourceIncident();
             incident.ImpactStartDate = Convert.ToDateTime(values[FieldNames.Incident.CreateDate]);
-            incident.Title = values[FieldNames.Incident.Title]; 
+            incident.Title = values[FieldNames.Incident.Title];
             incident.Severity = incidentDefaults.Severity;
-            incident.Description = values[FieldNames.Incident.Description];
-                //incidentDefaults.Description;
+
+            DescriptionEntry descriptionEntry = GenerateDescriptionEntry(values);
+            incident.DescriptionEntries = new DescriptionEntry[] { descriptionEntry };
+
             incident.Keywords = values["ConverstionID"];
             incident.Source = new AlertSourceInfo
             {
@@ -211,26 +226,20 @@
                 connectorClient = ConnectToIcmInstance();
             }
 
-            //incident.ServiceResponsible = new TenantIdentifier("ES Ads Diagnostics");
-
-            const RoutingOptions RoutingOptions = RoutingOptions.None;
-            long id = 0;
-
-           // id = 11715802;
-
-                // If the following exception is thrown while debugging, open Visual Studio as Administrator.
-                // Additional information: Could not establish secure channel for SSL/TLS with authority 'icm.ad.msft.net'.
+            long incidentId = 0;
             IncidentAddUpdateResult result = connectorClient.AddOrUpdateIncident2(
-                                                                                      config.IcmClientConfig.ConnectorId,
-                                                                                      incident,
-                                                                                      RoutingOptions);
-            if (result != null)
-                {
-                id = result.IncidentId.Value;
-                    // CacheWorkItem(id);
-                }
-            return id;
-         }
+                                                                config.IcmClientConfig.ConnectorId,
+                                                                incident,
+                                                                RoutingOptions.None);
+
+            if (result != null && result.IncidentId.HasValue)
+            {
+                incidentId = result.IncidentId.Value;
+                WorkItemsCache.Add(values["ConverstionID"], incidentId);
+            }
+            return incidentId;
+        }
+
         public void ModifyWorkItem(long workItemId, string comment, Dictionary<string, string> values)
         {
             if (workItemId <= 0)
@@ -271,6 +280,37 @@
         {
             var teamlist = new List<string> { "ES Ads Diagnostics" };
             return new IcmNameResolver(teamlist);
+        }
+
+        private DescriptionEntry GenerateDescriptionEntry(Dictionary<string, string> values)
+        {
+            DateTime now = DateTime.UtcNow;
+            DescriptionTextRenderType renderType = DescriptionTextRenderType.Plaintext;
+            string text = values[FieldNames.Incident.Description];
+            string xhtmlValid;
+            string errors;
+
+            // Try to convert from HTML to XHTML, if failed, just leave it as plain text
+            if (XmlSanitizer.TryMakeXHtml(text, out xhtmlValid, out errors))
+            {
+                string xhtmlSanitized;
+                if (XmlSanitizer.SanitizeXml(xhtmlValid, false, false, out xhtmlSanitized, out errors))
+                {
+                    text = xhtmlSanitized;
+                    renderType = DescriptionTextRenderType.Html;
+                }
+            }
+
+            return new DescriptionEntry
+            {
+                Cause = DescriptionEntryCause.Created,
+                Date = now,
+                ChangedBy = values[FieldNames.Incident.CreatedBy],
+                SubmitDate = now,
+                SubmittedBy = values[FieldNames.Incident.CreatedBy],
+                Text = text,
+                RenderType = renderType
+            };
         }
     }
 }
