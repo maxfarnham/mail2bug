@@ -2,18 +2,14 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
     using System.Security.Cryptography.X509Certificates;
     using System.ServiceModel;
     using System.ServiceModel.Security;
-    using System.Xml.Serialization;
 
     using log4net;
 
-    using Mail2Bug.ExceptionClasses;
-    using Mail2Bug.MessageProcessingStrategies;
+    using ExceptionClasses;
+    using MessageProcessingStrategies;
 
     using Microsoft.AzureAd.Icm.Types;
     using Microsoft.AzureAd.Icm.WebService.Client;
@@ -23,8 +19,6 @@
     {
         private const string ToolName = "Mail2IcM";
         private const string CertThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
-        private const string EndpointUrl = "https://mail2icm.documents.azure.com:443/";
-        private const string AuthorizationKey = "hvJ1gGUBL9gAyhsM9so3WFuNdsTF3QcFKqHDr3AgMUWI5iS5ulPfnlKT6preZGIAGXIoZ5CtN+005bj4Uk0+Ag==";
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(IcmWorkItemManagment));
         private readonly Config.InstanceConfig config;
@@ -68,6 +62,16 @@
             Logger.InfoFormat("Initializing work items cache");
 
             WorkItemsCache = new SortedList<string, long>();
+
+            var result = dataServiceClient.SearchIncidents(null, null, null);
+
+            foreach (var incident in result)
+            {
+                if (!string.IsNullOrEmpty(incident.Keywords))
+                {
+                    WorkItemsCache.Add(incident.Keywords, incident.Id);
+                }
+            }
         }
 
         public static X509Certificate RetrieveCertificate(string certThumbprint)
