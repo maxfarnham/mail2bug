@@ -69,6 +69,12 @@
             {
                 if (!string.IsNullOrEmpty(incident.Keywords))
                 {
+                    if (WorkItemsCache.ContainsKey(incident.Keywords))
+                    {
+                        Logger.InfoFormat($"Skipping duplicate cache key: {incident.Keywords}");
+                        continue;
+                    }
+
                     WorkItemsCache.Add(incident.Keywords, incident.Id);
                 }
             }
