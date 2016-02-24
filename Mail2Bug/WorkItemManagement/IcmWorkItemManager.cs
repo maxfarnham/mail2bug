@@ -224,7 +224,10 @@
             };
             incident.RoutingId = config.IcmClientConfig.RoutingId;
             incident.Status = incidentDefaults.Status;
-
+            if (values["CorrelationId"] != "0")
+            {
+                incident.CorrelationId = values["CorrelationId"];
+            }
             return incident;
         }
 
