@@ -68,7 +68,9 @@
     </When>
     <Otherwise>
       <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework">
+          <Private>False</Private>
+        </Reference>
       </ItemGroup>
     </Otherwise>
   </Choose>
@@ -84,6 +86,7 @@
     <Compile Include="SimpleBugStrategyUnitTest.cs" />
     <Compile Include="TfsQueryParserUnitTest.cs" />
     <Compile Include="WorkItemManagement\IcmODataClientTest.cs" />
+    <Compile Include="WorkItemManagement\IcmWorkItemManagementUnitTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
