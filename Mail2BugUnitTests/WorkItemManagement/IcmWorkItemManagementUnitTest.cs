@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.AzureAd.Icm.Types;
 
 using System.Collections.Generic;
 
@@ -12,82 +13,71 @@ namespace Mail2BugUnitTests.WorkItemManagement
     public class IcmWorkItemManagementUnitTest
     {
         [TestMethod]
-        public void IcmIncidentOverridesValidTest()
+        public void IcmIncidentOverridesValuesTest()
         {
-            // Test to update supported fields with valid values
-            var incident = new Incident();
-            incident.Keywords = "Initial";
-            incident.OwningTeamId = "Initial";
-            incident.MonitorId = "Initial";
-            incident.ReproSteps = "Initial";
+            // Tests mix of valid & invalid values and atrributes
+            // Invalid values & fields should be ignored with no side effects, valid fields with valid values should be updated
+            var incident = new Mail2Bug.IcmIncidentsApiODataReference.Incident();
+            incident.IsNoise = false;
+            Mail2Bug.IcmIncidentsApiODataReference.RootCauseEntity rce = new Mail2Bug.IcmIncidentsApiODataReference.RootCauseEntity();
+            rce.Title = "Test Root cause";
+            incident.RootCause = rce;
             incident.Severity = 4;
             incident.HitCount = 10;
+            incident.Keywords = "Initial";
+            incident.OwningTeamId = "Initial";
 
             Dictionary<string, string> values = new Dictionary<string, string>();
+            values.Add("RootCause", "Error");
+            values.Add("IsNoise", "Error");
+            values.Add("HitCount", "Error");
+            values.Add("DoesntExist", "Error");
             values.Add("Keywords", "Changed");
             values.Add("OwningTeamId", "Changed");
-            values.Add("MonitorId", "Changed");
-            values.Add("ReproSteps", "Changed");
             values.Add("Severity", "3");
-            values.Add("HitCount", "5");
-
-            IcmWorkItemManagment.ApplyOverrides(ref incident, values);
-
-            Assert.AreEqual(incident.Keywords, "Changed");
-            Assert.AreEqual(incident.OwningTeamId, "Changed");
-            Assert.AreEqual(incident.MonitorId, "Changed");
-            Assert.AreEqual(incident.ReproSteps, "Changed");
-            Assert.AreEqual(incident.Severity, 3);
-            Assert.AreEqual(incident.HitCount, 5);
-        }
-
-        [TestMethod]
-        public void IcmIncidentOverridesInvalidTest()
-        {
-            // Test attempt to override invalid/unsupported fields & supported fields with invalid values
-            var incident = new Incident();
-            incident.IsNoise = false;
-            RootCauseEntity rce = new RootCauseEntity();
-            rce.Title = "Test Root cause";
-            incident.RootCause = rce;
-            incident.Severity = 4;
-
-            Dictionary<string, string> values = new Dictionary<string, string>();
-            values.Add("RootCause", "Error");
-            values.Add("IsNoise", "Error");
-            values.Add("Severity", "Error");
 
             IcmWorkItemManagment.ApplyOverrides(ref incident, values);
 
             Assert.AreEqual(incident.IsNoise, false);
             Assert.AreEqual(incident.RootCause, rce);
-            Assert.AreEqual(incident.Severity, 4);
+            Assert.AreEqual(incident.Keywords, "Changed");
+            Assert.AreEqual(incident.OwningTeamId, "Changed");
+            Assert.AreEqual(incident.Severity, 3);
+            Assert.AreEqual(incident.HitCount, 10);
         }
 
         [TestMethod]
-        public void IcmIncidentOverridesMixedTest()
+        public void IcmIncidentOverridesTypeTest()
         {
-            // Test mixes valid and invalid overrides - valid overrides should go through despite invalid overrides failing
-            var incident = new Incident();
-            RootCauseEntity rce = new RootCauseEntity();
-            rce.Title = "Test Root cause";
-            incident.IsNoise = false;
-            incident.RootCause = rce;
-            incident.Severity = 4;
-            incident.Keywords = "Initial";
-
+            // Test how overrides handle different types passed as "incident"
             Dictionary<string, string> values = new Dictionary<string, string>();
             values.Add("RootCause", "Error");
             values.Add("IsNoise", "Error");
             values.Add("Severity", "3");
             values.Add("Keywords", "Changed");
 
-            IcmWorkItemManagment.ApplyOverrides(ref incident, values);
+            // These three should fail without error
+            string testString = "";
+            IcmWorkItemManagment.ApplyOverrides(ref testString, values);
+            int testInt = 0;
+            IcmWorkItemManagment.ApplyOverrides(ref testInt, values);
+            Mail2Bug.IcmIncidentsApiODataReference.IncidentImpactedComponent testComplexObj = new Mail2Bug.IcmIncidentsApiODataReference.IncidentImpactedComponent();
+            IcmWorkItemManagment.ApplyOverrides(ref testComplexObj, values);
 
-            Assert.AreEqual(incident.IsNoise, false);
-            Assert.AreEqual(incident.RootCause, rce);
-            Assert.AreEqual(incident.Severity, 3);
-            Assert.AreEqual(incident.Keywords, "Changed");
+            // These two should be handles identically
+            Mail2Bug.IcmIncidentsApiODataReference.Incident testIncident = new Mail2Bug.IcmIncidentsApiODataReference.Incident();
+            testIncident.Keywords = "Initial";
+            testIncident.Severity = 4;
+            IcmWorkItemManagment.ApplyOverrides(ref testIncident, values);
+            Assert.AreEqual(testIncident.Severity, 3);
+            Assert.AreEqual(testIncident.Keywords, "Changed");
+
+            AlertSourceIncident testAlertSourceIncident = new AlertSourceIncident();
+            testAlertSourceIncident.Keywords = "Initial";
+            testAlertSourceIncident.Severity = 4;
+            IcmWorkItemManagment.ApplyOverrides(ref testAlertSourceIncident, values);
+            Assert.AreEqual(testAlertSourceIncident.Severity, 3);
+            Assert.AreEqual(testAlertSourceIncident.Keywords, "Changed");
         }
     }
 }

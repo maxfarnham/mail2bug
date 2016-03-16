@@ -240,6 +240,8 @@
                 connectorClient = ConnectToIcmInstance();
             }
 
+            ApplyOverrides(ref incident, values);
+
             long incidentId = 0;
             IncidentAddUpdateResult result = connectorClient.AddOrUpdateIncident2(
                                                                 config.IcmClientConfig.ConnectorId,
@@ -287,7 +289,7 @@
             dataServiceClient.UpdateIncident(incident);
         }
 
-        public static void ApplyOverrides(ref IcmIncidentsApiODataReference.Incident incident, Dictionary<string, string> values)
+        public static void ApplyOverrides<T>(ref T incident, Dictionary<string, string> values)
         {
             // Using reflection to write override values into IcM incident
             Type incidentType = incident.GetType();
