@@ -2,9 +2,11 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Security.Cryptography.X509Certificates;
     using System.ServiceModel;
     using System.ServiceModel.Security;
+    using System.Xml;
 
     using log4net;
 
@@ -19,6 +21,11 @@
     {
         private const string ToolName = "Mail2IcM";
         private const string CertThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
+
+        // IcM description text maximum length is actually 32000 characters but let's keep it 
+        // slightly less to avoid boundary problems and leave room for the truncation notice.
+        public const int DescriptionLengthMax = 31500;
+        public const string TruncationMessage = "*** Description truncated by Mail2IcM ***  See attached email for complete description.";
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(IcmWorkItemManagment));
         private readonly Config.InstanceConfig config;
@@ -194,7 +201,8 @@
             incident.Title = values[FieldNames.Incident.Title];
             incident.Severity = incidentDefaults.Severity;
 
-            DescriptionEntry descriptionEntry = GenerateDescriptionEntry(values);
+            int maxHyperlinkLength = config.WorkItemSettings.RemoveHyperlinkExceedingNCharacters ?? -1;
+            DescriptionEntry descriptionEntry = GenerateDescriptionEntry(values, maxHyperlinkLength);
             incident.DescriptionEntries = new DescriptionEntry[] { descriptionEntry };
 
             incident.Keywords = values["ConverstionID"];
@@ -295,26 +303,46 @@
             return new IcmNameResolver(teamlist);
         }
 
-        private DescriptionEntry GenerateDescriptionEntry(Dictionary<string, string> values)
+        public static DescriptionEntry GenerateDescriptionEntry(Dictionary<string, string> values, int maxHyperlinkLength)
         {
             DateTime now = DateTime.UtcNow;
             DescriptionTextRenderType renderType = DescriptionTextRenderType.Plaintext;
             string text = values[FieldNames.Incident.Description];
-            string xhtmlValid;
-            string errors;
 
-            // Try to convert from HTML to XHTML, if failed, just leave it as plain text
-            if (XmlSanitizer.TryMakeXHtml(text, out xhtmlValid, out errors))
+            if (text.IndexOf("html", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                string xhtmlSanitized;
-                if (XmlSanitizer.SanitizeXml(xhtmlValid, false, false, out xhtmlSanitized, out errors))
+                // Try to convert from HTML to XHTML, if failed, just leave it as plain text
+                string xhtmlValid;
+                string errors;
+                if (XmlSanitizer.TryMakeXHtml(text, out xhtmlValid, out errors))
                 {
-                    text = xhtmlSanitized;
-                    renderType = DescriptionTextRenderType.Html;
+                    string xhtmlSanitized;
+                    if (XmlSanitizer.SanitizeXml(xhtmlValid, false, false, out xhtmlSanitized, out errors))
+                    {
+                        text = xhtmlSanitized;
+                        renderType = DescriptionTextRenderType.Html;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(errors))
+                {
+                    Logger.Info("Failed to convert message body to HTML. Defaulting to plain text. Conversion message: " + errors);
+                }
+                else if (text.Length > DescriptionLengthMax)
+                {
+                    // Truncate string if too long. IcM limits the number of characters in the DescriptionEntry.Text property.
+                    text = TruncateXml(text, DescriptionLengthMax, maxHyperlinkLength);
                 }
             }
+            else if (text.Length > DescriptionLengthMax)
+            {
+                // Truncate string if too long. IcM limits the number of characters in the DescriptionEntry.Text property.
+                text = text.Substring(0, DescriptionLengthMax);
+                text += TruncationMessage;
+            }
 
-            return new DescriptionEntry
+
+            var descriptionEntry = new DescriptionEntry
             {
                 Cause = DescriptionEntryCause.Created,
                 Date = now,
@@ -322,8 +350,100 @@
                 SubmitDate = now,
                 SubmittedBy = values[FieldNames.Incident.CreatedBy],
                 Text = text,
-                RenderType = renderType
+                RenderType = renderType,
             };
+
+            return descriptionEntry;
+        }
+
+        public static string TruncateXml(string xml, int maxLength, int maxHyperlinkLength)
+        {
+            XmlDocument document = new XmlDocument();
+            document.LoadXml(xml);
+
+            Stack<XmlNode> nodeStack = new Stack<XmlNode>();
+            XmlNode currentNode = document.FirstChild;
+            int accumulatedLength = 0;
+            while (currentNode != null)
+            {
+                if ((currentNode.Name == "a") && (maxHyperlinkLength >= 0) && (currentNode.Attributes != null))
+                {
+                    XmlNode hrefNode = currentNode.Attributes.GetNamedItem("href");
+                    if (hrefNode?.Value != null && (hrefNode.Value.Length > maxHyperlinkLength) && (currentNode.ParentNode != null))
+                    {
+                        XmlNode newNode = document.CreateNode(XmlNodeType.Element, "div", "");
+                        newNode.InnerText = "** Mail2IcM removed hyperlink **";
+                        currentNode.ParentNode.ReplaceChild(newNode, currentNode);
+                        currentNode = newNode;
+                    }
+                }
+
+                int lengthIncrease = currentNode.OuterXml.Length - currentNode.InnerXml.Length;
+                if ((accumulatedLength + lengthIncrease) > maxLength)
+                {
+                    XmlNode nodeToDelete = currentNode;
+
+                    while (nodeStack.Count > 0)
+                    {
+                        currentNode = nodeStack.Pop();
+
+                        while (nodeToDelete != null)
+                        {
+                            XmlNode nextNode = nodeToDelete.NextSibling;
+                            currentNode.RemoveChild(nodeToDelete);
+                            nodeToDelete = nextNode;
+                        }
+
+                        nodeToDelete = currentNode.NextSibling;
+                    }
+
+                    currentNode = currentNode.NextSibling;
+                    continue;
+                }
+
+                accumulatedLength += lengthIncrease;
+
+                XmlNode child = currentNode.FirstChild;
+                if (child != null)
+                {
+                    nodeStack.Push(currentNode);
+                    currentNode = child;
+                    continue;
+                }
+
+                XmlNode sibling = currentNode.NextSibling;
+                if (sibling != null)
+                {
+                    currentNode = sibling;
+                    continue;
+                }
+
+                while ((nodeStack.Count > 0) && (nodeStack.Peek().LastChild == currentNode))
+                {
+                    currentNode = nodeStack.Pop();
+                }
+
+                currentNode = currentNode.NextSibling;
+            }
+
+            if (xml.Length != document.OuterXml.Length)
+            {
+                XmlNode truncateMessageNode = document.CreateNode(XmlNodeType.Element,  "div", "");
+                truncateMessageNode.InnerText = TruncationMessage;
+                document.LastChild.AppendChild(truncateMessageNode);
+            }
+
+            string result;
+            XmlWriterSettings settings = new XmlWriterSettings { OmitXmlDeclaration = true };
+            using (var stringWriter = new StringWriter())
+            using (var xmlWriter = XmlWriter.Create(stringWriter, settings))
+            {
+                document.WriteTo(xmlWriter);
+                xmlWriter.Flush();
+                result = stringWriter.ToString();
+            }
+
+            return result;
         }
     }
 }

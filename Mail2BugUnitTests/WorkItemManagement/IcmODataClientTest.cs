@@ -5,10 +5,9 @@
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
 
-    using Mail2Bug.IcmIncidentsApiODataReference;
-
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    using Mail2Bug.IcmIncidentsApiODataReference;
     using Mail2Bug.WorkItemManagement;
 
     [TestClass]

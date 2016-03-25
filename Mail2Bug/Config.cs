@@ -30,7 +30,7 @@ namespace Mail2Bug
 
             public override string ToString()
             {
-                return String.Format("Name: {0}", Name);
+                return $"Name: {Name}";
             }
         }
 
@@ -149,6 +149,8 @@ namespace Mail2Bug
             public bool AttachOriginalMessage { get; set; }
 
             public ProcessingStrategyType ProcessingStrategy = ProcessingStrategyType.SimpleBugStrategy;
+
+            public int? RemoveHyperlinkExceedingNCharacters { get; set; }
         }
 
         public class DefaultValueDefinition
