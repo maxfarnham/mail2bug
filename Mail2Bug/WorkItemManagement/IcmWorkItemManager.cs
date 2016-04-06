@@ -2,6 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Data;
+    using System.Data.SQLite;
+    using System.Diagnostics;
     using System.IO;
     using System.Security.Cryptography.X509Certificates;
     using System.ServiceModel;
@@ -13,21 +16,27 @@
     using ExceptionClasses;
     using MessageProcessingStrategies;
 
+    using Microsoft.Applications.Telemetry;
     using Microsoft.AzureAd.Icm.Types;
     using Microsoft.AzureAd.Icm.WebService.Client;
     using Microsoft.AzureAd.Icm.XhtmlUtility;
+
+    using Incident = Mail2Bug.IcmIncidentsApiODataReference.Incident;
 
     public class IcmWorkItemManagment : IWorkItemManager
     {
         private const string ToolName = "Mail2IcM";
         private const string CertThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
+        private const string CacheFilePath = "WorkItemCache.sqlite";
 
         // IcM description text maximum length is actually 32000 characters but let's keep it 
         // slightly less to avoid boundary problems and leave room for the truncation notice.
         public const int DescriptionLengthMax = 31500;
         public const string TruncationMessage = "*** Description truncated by Mail2IcM ***  See attached email for complete description.";
 
-        private static readonly ILog Logger = LogManager.GetLogger(typeof(IcmWorkItemManagment));
+        private static readonly ILog Logger = log4net.LogManager.GetLogger(typeof(IcmWorkItemManagment));
+
+        private readonly ILogger logger = Microsoft.Applications.Telemetry.Server.LogManager.GetLogger();
         private readonly Config.InstanceConfig config;
         private readonly DateTime dateHolder;
         private readonly INameResolver nameResolver;
@@ -36,6 +45,11 @@
         private ConnectorIncidentManagerClient connectorClient;
 
         public SortedList<string, long> WorkItemsCache { get; private set; }
+
+        // TODO: remove the static variables. The cache query is identical so keeping a static 
+        // collection around to save on query time to IcM.
+        private static SortedList<string, long> staticWorkItemsCache = new SortedList<string, long>();
+        private static bool isStaticCacheInitialized = false;
 
         public IcmWorkItemManagment(Config.InstanceConfig instanceConfig)
         {
@@ -61,30 +75,92 @@
 
             nameResolver = InitNameResolver();
             dateHolder = DateTime.UtcNow;
-            Logger.InfoFormat("Completed creating IcM work item manager.");
+            Logger.Info("Completed creating IcM work item manager.");
         }
 
         private void InitWorkItemsCache()
         {
-            Logger.InfoFormat("Initializing work items cache");
+            Logger.Info("Initializing work items cache");
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             WorkItemsCache = new SortedList<string, long>();
 
-            var result = dataServiceClient.SearchIncidents(null, null, null);
-
-            foreach (var incident in result)
+            if (!File.Exists(CacheFilePath))
             {
-                if (!string.IsNullOrEmpty(incident.Keywords))
-                {
-                    if (WorkItemsCache.ContainsKey(incident.Keywords))
-                    {
-                        Logger.InfoFormat($"Skipping duplicate cache key: {incident.Keywords}");
-                        continue;
-                    }
-
-                    WorkItemsCache.Add(incident.Keywords, incident.Id);
-                }
+                CreateLocalPersistedCache();
             }
+
+            // TODO: remove the following block after about three months of cache data is collected.
+            if (true) 
+            {
+                if (!isStaticCacheInitialized)
+                {
+                    isStaticCacheInitialized = true;
+                    var result = dataServiceClient.SearchIncidents();
+                    foreach (Incident incident in result)
+                    {
+                        if (!string.IsNullOrEmpty(incident.Keywords))
+                        {
+                            if (staticWorkItemsCache.ContainsKey(incident.Keywords))
+                            {
+                                Logger.Info($"Skipping duplicate cache key: {incident.Keywords}");
+                                continue;
+                            }
+
+                            staticWorkItemsCache.Add(incident.Keywords, incident.Id);
+                        }
+                    }
+                }
+
+                WorkItemsCache = staticWorkItemsCache;
+            } // ENDTODO
+
+            // // TODO: remove condition to enable the following block to load the cache in memory.
+            if (false)
+            {
+                SQLiteConnection connection = new SQLiteConnection($"Data Source={CacheFilePath}");
+                connection.Open();
+
+                string getAllKeyValue = $"select key, value from WorkItemCache where routingId = '{config.IcmClientConfig.RoutingId}'";
+                SQLiteCommand command = new SQLiteCommand(getAllKeyValue, connection);
+                SQLiteDataReader reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+                while (reader.Read())
+                {
+                    string key = reader.GetString(0);
+                    long incidentId = reader.GetInt64(1);
+                    WorkItemsCache.Add(key, incidentId);
+                }
+
+                connection.Close();
+            }
+
+            stopwatch.Stop();
+            logger.LogSampledMetric("CacheLoadTime", stopwatch.ElapsedMilliseconds, "milliseconds", config.Name);
+            logger.LogSampledMetric("CachedIncidentCount", WorkItemsCache.Count, "count", config.Name);
+        }
+
+        private static void InsertRecord(string routingId, string key, long incidentId, DateTime createDate)
+        {
+            SQLiteConnection connection = new SQLiteConnection($"Data Source={CacheFilePath}");
+            connection.Open();
+            string insertData = "insert into WorkItemCache (routingId, key, value, created) " +
+                $"values ('{routingId}', '{key}', {incidentId}, '{createDate}')";
+            SQLiteCommand command = new SQLiteCommand(insertData, connection);
+            command.ExecuteNonQuery();
+            connection.Close();
+        }
+
+        private static void CreateLocalPersistedCache()
+        {
+            Logger.Info($"Creating a new cache file: {CacheFilePath}");
+            SQLiteConnection.CreateFile(CacheFilePath);
+            SQLiteConnection connection = new SQLiteConnection($"Data Source={CacheFilePath}");
+            connection.Open();
+
+            string createTable = "create table WorkItemCache (routingId text, key text, value integer, created text)";
+            SQLiteCommand command = new SQLiteCommand(createTable, connection);
+            command.ExecuteNonQuery();
+            connection.Close();
         }
 
         public static X509Certificate RetrieveCertificate(string certThumbprint)
@@ -203,7 +279,7 @@
 
             int maxHyperlinkLength = config.WorkItemSettings.RemoveHyperlinkExceedingNCharacters ?? -1;
             DescriptionEntry descriptionEntry = GenerateDescriptionEntry(values, maxHyperlinkLength);
-            incident.DescriptionEntries = new DescriptionEntry[] { descriptionEntry };
+            incident.DescriptionEntries = new [] { descriptionEntry };
 
             incident.Keywords = values["ConverstionID"];
             incident.Source = new AlertSourceInfo
@@ -241,7 +317,7 @@
 
         public long CreateWorkItem(Dictionary<string, string> values)
         {
-            AlertSourceIncident incident = this.CreateIncidentWithDefaults(values);
+            AlertSourceIncident incident = CreateIncidentWithDefaults(values);
             if (connectorClient == null)
             {
                 connectorClient = ConnectToIcmInstance();
@@ -253,10 +329,12 @@
                                                                 incident,
                                                                 RoutingOptions.None);
 
-            if (result != null && result.IncidentId.HasValue)
+            if (result?.IncidentId != null)
             {
                 incidentId = result.IncidentId.Value;
                 WorkItemsCache.Add(values["ConverstionID"], incidentId);
+                DateTime createDateTime = result.UpdateProcessTime ?? DateTime.UtcNow;
+                InsertRecord(config.IcmClientConfig.RoutingId, values["ConverstionID"], incidentId, createDateTime);
             }
             return incidentId;
         }

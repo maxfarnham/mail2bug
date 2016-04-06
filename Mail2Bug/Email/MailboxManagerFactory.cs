@@ -1,20 +1,20 @@
-﻿using System.Collections.Generic;
-using Mail2Bug.Email.EWS;
-using Mail2Bug.ExceptionClasses;
-using Mail2Bug.Helpers;
-using Microsoft.Exchange.WebServices.Data;
-
-namespace Mail2Bug.Email
+﻿namespace Mail2Bug.Email
 {
+    using System.Collections.Generic;
+    using Mail2Bug.Email.EWS;
+    using Mail2Bug.ExceptionClasses;
+    using Mail2Bug.Helpers;
+    using Microsoft.Exchange.WebServices.Data;
+
     /// <summary>
     ///  The goal of the MailboxManagerFactory is to separate concerns from the Mail2BugEngine - this way it does not need
     /// to be aware of the specific implementation of the EMail layer, as long as it supports the IMailboxManager interface
     /// </summary>
     class MailboxManagerFactory
     {
-        public MailboxManagerFactory(EWSConnectionManager connectionManger)
+        public MailboxManagerFactory(EWSConnectionManager connectionManager)
         {
-            _connectionManger = connectionManger;
+            this.connectionManager = connectionManager;
         }
 
         public IMailboxManager CreateMailboxManager(Config.EmailSettings emailSettings)
@@ -26,7 +26,7 @@ namespace Mail2Bug.Email
                 Password = DPAPIHelper.ReadDataFromFile(emailSettings.EWSPasswordFile)
             };
 
-            var exchangeService = _connectionManger.GetConnection(credentials);
+            var exchangeService = this.connectionManager.GetConnection(credentials);
             var postProcessor = GetPostProcesor(emailSettings, exchangeService.Service);
 
             switch (emailSettings.ServiceType)
@@ -46,8 +46,7 @@ namespace Mail2Bug.Email
 
                 default:
                     throw new BadConfigException(
-                        "EmailSettings.ServiceType",
-                        string.Format("Invalid mailbox service type defined in config ({0})", emailSettings.ServiceType));
+                        "EmailSettings.ServiceType", $"Invalid mailbox service type defined in config ({emailSettings.ServiceType})");
             }
         }
 
@@ -72,6 +71,6 @@ namespace Mail2Bug.Email
         }
 
         // Enable connection caching for performance improvement when hosting multiple instances
-        private readonly EWSConnectionManager _connectionManger;
+        private readonly EWSConnectionManager connectionManager;
     }
 }

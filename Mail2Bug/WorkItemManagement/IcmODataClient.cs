@@ -133,28 +133,13 @@
             odataClient.Execute(continuation);
         }
 
-        public IEnumerable<Incident> SearchIncidents(string topOption, string skipOption, string filterQueryOption)
+        public IEnumerable<Incident> SearchIncidents()
         {
-            string incidentsRouteUri = this.config.IcmClientConfig.OdataServiceBaseUri + "/incidents?$inlinecount=allpages";
+            string incidentsRouteUri = config.IcmClientConfig.OdataServiceBaseUri + "/incidents?$inlinecount=allpages";
+            string filterQueryOption = $"&$filter=CreateDate gt datetime'{DateTime.UtcNow.AddDays(-30).ToString("yyyy-MM-ddTHH:mm:ss")}'";
+            incidentsRouteUri += filterQueryOption;
 
-            if (string.IsNullOrWhiteSpace(topOption) == false)
-            {
-                incidentsRouteUri += "&$top=" + topOption;
-            }
-
-            if (string.IsNullOrWhiteSpace(skipOption) == false)
-            {
-                incidentsRouteUri += "&$skip=" + skipOption;
-            }
-
-            filterQueryOption = string.Format("CreateDate gt datetime'{0}'", DateTime.UtcNow.AddDays(-30).ToString("yyyy-MM-ddTHH:mm:ss"));
-
-            if (string.IsNullOrWhiteSpace(filterQueryOption) == false)
-            {
-                incidentsRouteUri += "&$filter=" + filterQueryOption;
-            }
-
-            QueryOperationResponse<Incident> response = null;
+            QueryOperationResponse <Incident> response = null;
             try
             {
                 Logger.InfoFormat("Executing request: '{0}'...", incidentsRouteUri);

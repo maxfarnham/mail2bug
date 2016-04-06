@@ -1,13 +1,15 @@
-﻿using System;
-using System.Linq;
-using log4net;
-using Mail2Bug.Email;
-using Mail2Bug.Helpers;
-using Mail2Bug.MessageProcessingStrategies;
-using Mail2Bug.WorkItemManagement;
-
-namespace Mail2Bug
+﻿namespace Mail2Bug
 {
+    using System;
+    using System.Linq;
+
+    using log4net;
+
+    using Mail2Bug.Email;
+    using Mail2Bug.Helpers;
+    using Mail2Bug.MessageProcessingStrategies;
+    using Mail2Bug.WorkItemManagement;
+
     internal class Mail2BugEngine : IDisposable
     {
         private readonly IMailboxManager _mailboxManager;
@@ -30,10 +32,10 @@ namespace Mail2Bug
         {
             _config = configInstance;
 
-            Logger.InfoFormat("Initializing MailboxManager");
+            Logger.Info("Initializing MailboxManager");
             _mailboxManager = mailboxManagerFactory.CreateMailboxManager(_config.EmailSettings);
 
-            Logger.InfoFormat("Initializing WorkItemManager");
+            Logger.Info("Initializing WorkItemManager");
             _messageProcessingStrategy = new Lazy<IMessageProcessingStrategy>(InitProcessingStrategy);
             _messageProcessingStrategyImmediate = InitProcessingStrategy();
         }
