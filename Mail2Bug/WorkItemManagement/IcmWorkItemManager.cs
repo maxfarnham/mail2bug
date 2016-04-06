@@ -21,7 +21,6 @@
     using Microsoft.AzureAd.Icm.WebService.Client;
     using Microsoft.AzureAd.Icm.XhtmlUtility;
 
-    using Incident = Mail2Bug.IcmIncidentsApiODataReference.Incident;
 
     public class IcmWorkItemManagment : IWorkItemManager
     {
@@ -34,7 +33,7 @@
         public const int DescriptionLengthMax = 31500;
         public const string TruncationMessage = "*** Description truncated by Mail2IcM ***  See attached email for complete description.";
 
-        private static readonly ILog Logger = log4net.LogManager.GetLogger(typeof(IcmWorkItemManagment));
+        private static readonly ILog Logger = LogManager.GetLogger(typeof(IcmWorkItemManagment));
 
         private readonly ILogger logger = Microsoft.Applications.Telemetry.Server.LogManager.GetLogger();
         private readonly Config.InstanceConfig config;
@@ -46,10 +45,6 @@
 
         public SortedList<string, long> WorkItemsCache { get; private set; }
 
-        // TODO: remove the static variables. The cache query is identical so keeping a static 
-        // collection around to save on query time to IcM.
-        private static SortedList<string, long> staticWorkItemsCache = new SortedList<string, long>();
-        private static bool isStaticCacheInitialized = false;
 
         public IcmWorkItemManagment(Config.InstanceConfig instanceConfig)
         {
@@ -60,9 +55,7 @@
 
             X509Certificate certificate = RetrieveCertificate(CertThumbprint);
             dataServiceClient = new DataServiceODataClient(
-                new Uri(config.IcmClientConfig.OdataServiceBaseUri),
-                config,
-                certificate);
+                new Uri(config.IcmClientConfig.OdataServiceBaseUri), certificate);
 
             connectorClient = ConnectToIcmInstance();
             if (connectorClient == null)
@@ -90,49 +83,20 @@
                 CreateLocalPersistedCache();
             }
 
-            // TODO: remove the following block after about three months of cache data is collected.
-            if (true) 
+            SQLiteConnection connection = new SQLiteConnection($"Data Source={CacheFilePath}");
+            connection.Open();
+
+            string getAllKeyValue = $"select key, value from WorkItemCache where routingId = '{config.IcmClientConfig.RoutingId}'";
+            SQLiteCommand command = new SQLiteCommand(getAllKeyValue, connection);
+            SQLiteDataReader reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+            while (reader.Read())
             {
-                if (!isStaticCacheInitialized)
-                {
-                    isStaticCacheInitialized = true;
-                    var result = dataServiceClient.SearchIncidents();
-                    foreach (Incident incident in result)
-                    {
-                        if (!string.IsNullOrEmpty(incident.Keywords))
-                        {
-                            if (staticWorkItemsCache.ContainsKey(incident.Keywords))
-                            {
-                                Logger.Info($"Skipping duplicate cache key: {incident.Keywords}");
-                                continue;
-                            }
-
-                            staticWorkItemsCache.Add(incident.Keywords, incident.Id);
-                        }
-                    }
-                }
-
-                WorkItemsCache = staticWorkItemsCache;
-            } // ENDTODO
-
-            // // TODO: remove condition to enable the following block to load the cache in memory.
-            if (false)
-            {
-                SQLiteConnection connection = new SQLiteConnection($"Data Source={CacheFilePath}");
-                connection.Open();
-
-                string getAllKeyValue = $"select key, value from WorkItemCache where routingId = '{config.IcmClientConfig.RoutingId}'";
-                SQLiteCommand command = new SQLiteCommand(getAllKeyValue, connection);
-                SQLiteDataReader reader = command.ExecuteReader(CommandBehavior.CloseConnection);
-                while (reader.Read())
-                {
-                    string key = reader.GetString(0);
-                    long incidentId = reader.GetInt64(1);
-                    WorkItemsCache.Add(key, incidentId);
-                }
-
-                connection.Close();
+                string key = reader.GetString(0);
+                long incidentId = reader.GetInt64(1);
+                WorkItemsCache.Add(key, incidentId);
             }
+
+            connection.Close();
 
             stopwatch.Stop();
             logger.LogSampledMetric("CacheLoadTime", stopwatch.ElapsedMilliseconds, "milliseconds", config.Name);

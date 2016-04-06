@@ -21,7 +21,7 @@
         public IcmODataClientTest()
         {
             X509Certificate certificate = IcmWorkItemManagment.RetrieveCertificate(CertThumbprint);
-            dataServiceClient = new DataServiceODataClient(new Uri(ServiceUri), null, certificate);
+            dataServiceClient = new DataServiceODataClient(new Uri(ServiceUri), certificate);
         }
 
         [TestMethod]
