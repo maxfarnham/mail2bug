@@ -40,7 +40,10 @@
     <Reference Include="log4net">
       <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.AzureAd.Icm.Types, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="Microsoft.AzureAd.Icm.Types, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Public\IcmConnectorSdk\Microsoft.AzureAd.Icm.Types.dll</HintPath>
+    </Reference>
     <Reference Include="Moq">
       <HintPath>..\packages\Moq.4.2.1506.2016\lib\net40\Moq.dll</HintPath>
     </Reference>
@@ -70,7 +73,9 @@
     </When>
     <Otherwise>
       <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework">
+          <Private>False</Private>
+        </Reference>
       </ItemGroup>
     </Otherwise>
   </Choose>
@@ -87,6 +92,7 @@
     <Compile Include="TfsQueryParserUnitTest.cs" />
     <Compile Include="WorkItemManagement\IcmODataClientTest.cs" />
     <Compile Include="WorkItemManagement\IcmWorkItemManagerTest.cs" />
+    <Compile Include="WorkItemManagement\IcmWorkItemManagementUnitTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -6,6 +6,7 @@
     using System.Data.SQLite;
     using System.Diagnostics;
     using System.IO;
+	using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
     using System.ServiceModel;
     using System.ServiceModel.Security;
@@ -287,6 +288,8 @@
                 connectorClient = ConnectToIcmInstance();
             }
 
+            ApplyOverrides(ref incident, values);
+
             long incidentId = 0;
             IncidentAddUpdateResult result = connectorClient.AddOrUpdateIncident2(
                                                                 config.IcmClientConfig.ConnectorId,
@@ -331,7 +334,35 @@
                 Origin = ToolName
             };
 
+            ApplyOverrides(ref incident, values);
+
             dataServiceClient.UpdateIncident(incident);
+        }
+
+        public static void ApplyOverrides<T>(ref T incident, Dictionary<string, string> values)
+        {
+            // Using reflection to write override values into IcM incident
+            Type incidentType = incident.GetType();
+            foreach (var val in values)
+            {
+                try
+                {
+                    var prop = incidentType.GetRuntimeProperty(val.Key);
+
+                    if (prop.PropertyType == typeof(string) && prop.CanWrite)
+                        prop.SetValue(incident, val.Value);
+                    else if ((prop.PropertyType == typeof(int?) || prop.PropertyType == typeof(int)) && prop.CanWrite)
+                        prop.SetValue(incident, int.Parse(val.Value));
+                    else if ((prop.PropertyType == typeof(long?) || prop.PropertyType == typeof(long)) && prop.CanWrite)
+                        prop.SetValue(incident, long.Parse(val.Value));
+                    else
+                        throw new NotImplementedException("Overrides of non-string or non-integer fields not supported.");
+                }
+                catch (Exception ex)
+                {
+                    Logger.WarnFormat("Failed to modify property {0} with value {1}.\n Exception: {1}", val.Key, val.Value, ex);
+                }
+            }
         }
 
         public INameResolver GetNameResolver()
