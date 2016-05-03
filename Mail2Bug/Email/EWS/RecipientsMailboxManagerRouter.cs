@@ -1,11 +1,17 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using log4net;
-
-namespace Mail2Bug.Email.EWS
+﻿namespace Mail2Bug.Email.EWS
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+
+    using log4net;
+
+    using Microsoft.Applications.Telemetry;
+
     public class RecipientsMailboxManagerRouter
     {
+        private readonly ILogger logger = Microsoft.Applications.Telemetry.Server.LogManager.GetLogger();
+
         public delegate bool MessageEvaluator(IIncomingEmailMessage message);
 
         public RecipientsMailboxManagerRouter(IMailFolder folder)
@@ -44,7 +50,7 @@ namespace Mail2Bug.Email.EWS
 
         public void ProcessInbox()
         {
-            Logger.InfoFormat("Processing inbox for RecipientsMailboxManagerRouter");
+            Logger.Info("Processing inbox for RecipientsMailboxManagerRouter");
 
             if (_clients.Count == 0)
             {
@@ -59,9 +65,14 @@ namespace Mail2Bug.Email.EWS
 
             var messages = _folder.GetMessages().ToArray();
             messages = messages.OrderBy(message => message.ReceivedOn).ToArray();
-            
+            logger.LogSampledMetric("MessagesWaitingCount", messages.Length, "count");
+
+            int clientMessageCount = 0;
             foreach (var message in messages)
             {
+                double messageAge = (DateTime.UtcNow - message.ReceivedOn.ToUniversalTime()).TotalMinutes;
+                logger.LogSampledMetric("MessageAge", messageAge, "minutes", message.Subject);
+
                 bool messageAssigned = false;
                 foreach (var clientData in _clients)
                 {
@@ -71,17 +82,21 @@ namespace Mail2Bug.Email.EWS
                             , message.ConversationIndex, clientData.Key, message.Subject);
                         clientData.Value.Messages.Add(message);
                         messageAssigned = true;
+                        clientMessageCount++;
                     }
                 }
 
                 if (!messageAssigned)
                 {
-                    Logger.InfoFormat("Message doesn't match any client: Subject: '{0}'", message.Subject);
-                    this.RogueMessages.Add(message);
+                    Logger.Info($"Message doesn't match any client: Subject: '{message.Subject}'");
+                    RogueMessages.Add(message);
                 }
             }
 
-            Logger.InfoFormat("Finished processing inbox for RecipientsMailboxManagerRouter");
+            logger.LogSampledMetric("AllClientMessageCount", clientMessageCount, "count");
+            logger.LogSampledMetric("RogueMessageCount", RogueMessages.Count, "count");
+
+            Logger.Info("Finished processing inbox for RecipientsMailboxManagerRouter");
         }
 
         private struct ClientData

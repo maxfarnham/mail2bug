@@ -57,6 +57,7 @@
       <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.XML" />
     <Reference Include="TestApiCore">
       <HintPath>..\packages\Microsoft.TestApi.0.6.0.0\lib\net40\TestApiCore.dll</HintPath>
     </Reference>
@@ -90,6 +91,7 @@
     <Compile Include="SimpleBugStrategyUnitTest.cs" />
     <Compile Include="TfsQueryParserUnitTest.cs" />
     <Compile Include="WorkItemManagement\IcmODataClientTest.cs" />
+    <Compile Include="WorkItemManagement\IcmWorkItemManagerTest.cs" />
     <Compile Include="WorkItemManagement\IcmWorkItemManagementUnitTest.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using log4net;
-using Microsoft.Exchange.WebServices.Data;
-
-namespace Mail2Bug.Email.EWS
+﻿namespace Mail2Bug.Email.EWS
 {
+    using System.Diagnostics;
     using System.Linq;
+    using System;
+    using System.Collections.Generic;
 
-    using Microsoft.AzureAd.Icm.Utility;
+    using log4net;
+    using Microsoft.Applications.Telemetry;
+    using Microsoft.Exchange.WebServices.Data;
 
     /// <summary>
     /// This class caches EWS connection objects based on their settings.
@@ -21,6 +21,8 @@ namespace Mail2Bug.Email.EWS
     /// </summary>
     public class EWSConnectionManager
     {
+        private readonly ILogger logger = Microsoft.Applications.Telemetry.Server.LogManager.GetLogger();
+
         public struct Credentials
         {
             public string EmailAddress;
@@ -194,9 +196,11 @@ namespace Mail2Bug.Email.EWS
                 credentials.Password.GetHashCode());
         }
 
-        static private EWSConnection ConnectToEWS(Credentials credentials)
+        private EWSConnection ConnectToEWS(Credentials credentials)
         {
-            Logger.DebugFormat("Initializing FolderMailboxManager for email address {0}", credentials.EmailAddress);
+            Logger.Debug($"Initializing FolderMailboxManager for email address {credentials.EmailAddress}");
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
             var exchangeService = new ExchangeService(ExchangeVersion.Exchange2010_SP1)
             {
                 Credentials = new WebCredentials(credentials.UserName, credentials.Password),
@@ -207,20 +211,32 @@ namespace Mail2Bug.Email.EWS
                 credentials.EmailAddress,
                 x =>
                 {
-                    Logger.DebugFormat("Following redirection for EWS autodiscover: {0}", x);
+                    Logger.Debug($"Following redirection for EWS autodiscover: {x}");
                     return true;
                 }
                 );
 
-            Logger.DebugFormat("Service URL: {0}", exchangeService.Url);
+            Logger.Debug($"Service URL: {exchangeService.Url}");
 
-            return new EWSConnection()
+            EWSConnection ewsConnection = default(EWSConnection);
+            try
             {
-                Service = exchangeService,
-                Router =
-                    new RecipientsMailboxManagerRouter(
-                        new EWSMailFolder(Folder.Bind(exchangeService,WellKnownFolderName.Inbox)))
-            };
+                ewsConnection = new EWSConnection
+                {
+                    Service = exchangeService,
+                    Router = new RecipientsMailboxManagerRouter(
+                        new EWSMailFolder(Folder.Bind(exchangeService, WellKnownFolderName.Inbox)))
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to connect to EWS", ex);
+            }
+
+            stopwatch.Stop();
+            logger.LogSampledMetric("EWSConnectTime", stopwatch.ElapsedMilliseconds, "milliseconds");
+
+            return ewsConnection;
         }
 
 

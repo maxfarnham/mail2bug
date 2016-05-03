@@ -1,19 +1,23 @@
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using log4net;
-using Mail2Bug.Email;
-using Mail2Bug.Email.EWS;
 
-[assembly: CLSCompliant(false)]
+//[assembly: CLSCompliant(false)]
 
 namespace Mail2Bug
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Configuration;
+    using System.Diagnostics;
+    using System.IO;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+
+    using log4net;
+    using Microsoft.Applications.Telemetry;
+
+    using Mail2Bug.Email;
+    using Mail2Bug.Email.EWS;
+
     class MainApp
     {
         /// <summary>
@@ -22,6 +26,17 @@ namespace Mail2Bug
         [STAThread]
         public static void Main(string[] args)
         {
+            LogConfiguration loggerConfiguration = new LogConfiguration
+            {
+                Transmission = new TransmissionConfiguration { EnableAutomatedTelemetry = true },
+                Identifiers = new Dictionary<string, string> { { "MachineName", Environment.MachineName } }
+            };
+
+            string tenantToken = ConfigurationManager.AppSettings["AriaTenantToken"];
+            ILogger logger = Microsoft.Applications.Telemetry.Server.LogManager.Initialize(tenantToken, loggerConfiguration);
+
+            logger.LogEvent(new EventProperties("Starting"));
+
             if (args.Contains("-break"))
             {
                 Logger.Info("Breaking into debugger");
@@ -35,13 +50,11 @@ namespace Mail2Bug
                 List<string> configFiles = new List<string>();
                 foreach (string configpat in configsFilePattern)
                 {
-                      var temp = Directory.GetFiles(configPath, configpat);
-                      foreach (string st in temp)
-                       {
-                         configFiles.Add(st);
-                       }
+                    var configFileNames = Directory.GetFiles(configPath, configpat);
+                    configFiles.AddRange(configFileNames);
                 }
-                
+
+                logger.LogSampledMetric("ConfigFilesFound", configFiles.Count);
                 if (configFiles.Count == 0)
                 {
                     Logger.ErrorFormat("No configs found (path='{0}', pattern='{1}')", configPath, configsFilePattern);
@@ -68,6 +81,7 @@ namespace Mail2Bug
                     configs.Add(cfg);
                 }
 
+                logger.LogSampledMetric("ConfigFilesLoaded", configs.Count);
                 if (configs.Count == 0)
                 {
                     throw new ConfigurationErrorsException("None of the configs were valid.");
@@ -205,6 +219,8 @@ namespace Mail2Bug
 
         private static void InitInstances(IEnumerable<Config> configs)
         {
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
             _instances = new List<IInstanceRunner>();
             _ewsConnectionManger = new EWSConnectionManager(true);
             var mailboxManagerFactory = new MailboxManagerFactory(_ewsConnectionManger);
@@ -213,11 +229,17 @@ namespace Mail2Bug
             {
                 foreach (var instance in config.Instances)
                 {
+                    if (!File.Exists(instance.EmailSettings.EWSPasswordFile))
+                    {
+                        Logger.Error($"Failed to find password file for instance '{instance.Name}' at path: '{instance.EmailSettings.EWSPasswordFile}'");
+                        continue;
+                    }
+
                     try
                     {
                         var usePersistentInstances = ReadBoolFromAppConfig("UsePersistentInstances", true);
-                        Logger.InfoFormat("Initializing engine for instance '{0}' (Persistent? {1})", instance.Name, usePersistentInstances);
-                        
+                        Logger.Info($"Initializing engine for instance '{instance.Name}' (Persistent? {usePersistentInstances})");
+
                         if (usePersistentInstances)
                         {
                             _instances.Add(new PersistentInstanceRunner(instance, mailboxManagerFactory));
@@ -227,14 +249,18 @@ namespace Mail2Bug
                             _instances.Add(new TemporaryInstanceRunner(instance, mailboxManagerFactory));
                         }
 
-                        Logger.InfoFormat("Finished initialization of engine for instance '{0}'", instance.Name);
+                        Logger.Info($"Finished initialization of engine for instance '{instance.Name}'");
                     }
                     catch (Exception ex)
                     {
-                        Logger.ErrorFormat("Exception while initializing instance '{0}'\n{1}", instance.Name, ex);
+                        Logger.Error($"Exception while initializing instance '{instance.Name}'\n{ex}");
                     }
                 }
             }
+
+            stopwatch.Stop();
+            ILogger logger = Microsoft.Applications.Telemetry.Server.LogManager.GetLogger();
+            logger.LogSampledMetric("AllInstanceInitializeTime", stopwatch.ElapsedMilliseconds, "milliseconds");
         }
 
         private static int ReadIntFromAppConfig(string setting, int defaultValue)
@@ -252,7 +278,7 @@ namespace Mail2Bug
         private static List<IInstanceRunner> _instances;
         private static TimeSpan _timeoutPerIteration = TimeSpan.FromMinutes(30);
 
-        private static readonly ILog Logger = LogManager.GetLogger(typeof (MainApp));
+        private static readonly ILog Logger = log4net.LogManager.GetLogger(typeof (MainApp));
         private static EWSConnectionManager _ewsConnectionManger;
     }
 }

@@ -2,26 +2,42 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Data;
+    using System.Data.SQLite;
+    using System.Diagnostics;
+    using System.IO;
+	using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
     using System.ServiceModel;
     using System.ServiceModel.Security;
     using System.Reflection;
+    using System.Xml;
 
     using log4net;
 
     using ExceptionClasses;
     using MessageProcessingStrategies;
 
+    using Microsoft.Applications.Telemetry;
     using Microsoft.AzureAd.Icm.Types;
     using Microsoft.AzureAd.Icm.WebService.Client;
     using Microsoft.AzureAd.Icm.XhtmlUtility;
+
 
     public class IcmWorkItemManagment : IWorkItemManager
     {
         private const string ToolName = "Mail2IcM";
         private const string CertThumbprint = "8D565A480BDB7BA78933C009CD13A2B0E5C55CF3";
+        private const string CacheFilePath = "WorkItemCache.sqlite";
+
+        // IcM description text maximum length is actually 32000 characters but let's keep it 
+        // slightly less to avoid boundary problems and leave room for the truncation notice.
+        public const int DescriptionLengthMax = 31500;
+        public const string TruncationMessage = "*** Description truncated by Mail2IcM ***  See attached email for complete description.";
 
         private static readonly ILog Logger = LogManager.GetLogger(typeof(IcmWorkItemManagment));
+
+        private readonly ILogger logger = Microsoft.Applications.Telemetry.Server.LogManager.GetLogger();
         private readonly Config.InstanceConfig config;
         private readonly DateTime dateHolder;
         private readonly INameResolver nameResolver;
@@ -30,6 +46,7 @@
         private ConnectorIncidentManagerClient connectorClient;
 
         public SortedList<string, long> WorkItemsCache { get; private set; }
+
 
         public IcmWorkItemManagment(Config.InstanceConfig instanceConfig)
         {
@@ -40,9 +57,7 @@
 
             X509Certificate certificate = RetrieveCertificate(CertThumbprint);
             dataServiceClient = new DataServiceODataClient(
-                new Uri(config.IcmClientConfig.OdataServiceBaseUri),
-                config,
-                certificate);
+                new Uri(config.IcmClientConfig.OdataServiceBaseUri), certificate);
 
             connectorClient = ConnectToIcmInstance();
             if (connectorClient == null)
@@ -55,30 +70,63 @@
 
             nameResolver = InitNameResolver();
             dateHolder = DateTime.UtcNow;
-            Logger.InfoFormat("Completed creating IcM work item manager.");
+            Logger.Info("Completed creating IcM work item manager.");
         }
 
         private void InitWorkItemsCache()
         {
-            Logger.InfoFormat("Initializing work items cache");
+            Logger.Info("Initializing work items cache");
+            Stopwatch stopwatch = Stopwatch.StartNew();
 
             WorkItemsCache = new SortedList<string, long>();
 
-            var result = dataServiceClient.SearchIncidents(null, null, null);
-
-            foreach (var incident in result)
+            if (!File.Exists(CacheFilePath))
             {
-                if (!string.IsNullOrEmpty(incident.Keywords))
-                {
-                    if (WorkItemsCache.ContainsKey(incident.Keywords))
-                    {
-                        Logger.InfoFormat($"Skipping duplicate cache key: {incident.Keywords}");
-                        continue;
-                    }
-
-                    WorkItemsCache.Add(incident.Keywords, incident.Id);
-                }
+                CreateLocalPersistedCache();
             }
+
+            SQLiteConnection connection = new SQLiteConnection($"Data Source={CacheFilePath}");
+            connection.Open();
+
+            string getAllKeyValue = $"select key, value from WorkItemCache where routingId = '{config.IcmClientConfig.RoutingId}'";
+            SQLiteCommand command = new SQLiteCommand(getAllKeyValue, connection);
+            SQLiteDataReader reader = command.ExecuteReader(CommandBehavior.CloseConnection);
+            while (reader.Read())
+            {
+                string key = reader.GetString(0);
+                long incidentId = reader.GetInt64(1);
+                WorkItemsCache.Add(key, incidentId);
+            }
+
+            connection.Close();
+
+            stopwatch.Stop();
+            logger.LogSampledMetric("CacheLoadTime", stopwatch.ElapsedMilliseconds, "milliseconds", config.Name);
+            logger.LogSampledMetric("CachedIncidentCount", WorkItemsCache.Count, "count", config.Name);
+        }
+
+        private static void InsertRecord(string routingId, string key, long incidentId, DateTime createDate)
+        {
+            SQLiteConnection connection = new SQLiteConnection($"Data Source={CacheFilePath}");
+            connection.Open();
+            string insertData = "insert into WorkItemCache (routingId, key, value, created) " +
+                $"values ('{routingId}', '{key}', {incidentId}, '{createDate}')";
+            SQLiteCommand command = new SQLiteCommand(insertData, connection);
+            command.ExecuteNonQuery();
+            connection.Close();
+        }
+
+        private static void CreateLocalPersistedCache()
+        {
+            Logger.Info($"Creating a new cache file: {CacheFilePath}");
+            SQLiteConnection.CreateFile(CacheFilePath);
+            SQLiteConnection connection = new SQLiteConnection($"Data Source={CacheFilePath}");
+            connection.Open();
+
+            string createTable = "create table WorkItemCache (routingId text, key text, value integer, created text)";
+            SQLiteCommand command = new SQLiteCommand(createTable, connection);
+            command.ExecuteNonQuery();
+            connection.Close();
         }
 
         public static X509Certificate RetrieveCertificate(string certThumbprint)
@@ -195,8 +243,9 @@
             incident.Title = values[FieldNames.Incident.Title];
             incident.Severity = incidentDefaults.Severity;
 
-            DescriptionEntry descriptionEntry = GenerateDescriptionEntry(values);
-            incident.DescriptionEntries = new DescriptionEntry[] { descriptionEntry };
+            int maxHyperlinkLength = config.WorkItemSettings.RemoveHyperlinkExceedingNCharacters ?? -1;
+            DescriptionEntry descriptionEntry = GenerateDescriptionEntry(values, maxHyperlinkLength);
+            incident.DescriptionEntries = new [] { descriptionEntry };
 
             incident.Keywords = values["ConverstionID"];
             incident.Source = new AlertSourceInfo
@@ -234,7 +283,7 @@
 
         public long CreateWorkItem(Dictionary<string, string> values)
         {
-            AlertSourceIncident incident = this.CreateIncidentWithDefaults(values);
+            AlertSourceIncident incident = CreateIncidentWithDefaults(values);
             if (connectorClient == null)
             {
                 connectorClient = ConnectToIcmInstance();
@@ -248,10 +297,12 @@
                                                                 incident,
                                                                 RoutingOptions.None);
 
-            if (result != null && result.IncidentId.HasValue)
+            if (result?.IncidentId != null)
             {
                 incidentId = result.IncidentId.Value;
                 WorkItemsCache.Add(values["ConverstionID"], incidentId);
+                DateTime createDateTime = result.UpdateProcessTime ?? DateTime.UtcNow;
+                InsertRecord(config.IcmClientConfig.RoutingId, values["ConverstionID"], incidentId, createDateTime);
             }
             return incidentId;
         }
@@ -326,26 +377,46 @@
             return new IcmNameResolver(teamlist);
         }
 
-        private DescriptionEntry GenerateDescriptionEntry(Dictionary<string, string> values)
+        public static DescriptionEntry GenerateDescriptionEntry(Dictionary<string, string> values, int maxHyperlinkLength)
         {
             DateTime now = DateTime.UtcNow;
             DescriptionTextRenderType renderType = DescriptionTextRenderType.Plaintext;
             string text = values[FieldNames.Incident.Description];
-            string xhtmlValid;
-            string errors;
 
-            // Try to convert from HTML to XHTML, if failed, just leave it as plain text
-            if (XmlSanitizer.TryMakeXHtml(text, out xhtmlValid, out errors))
+            if (text.IndexOf("html", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                string xhtmlSanitized;
-                if (XmlSanitizer.SanitizeXml(xhtmlValid, false, false, out xhtmlSanitized, out errors))
+                // Try to convert from HTML to XHTML, if failed, just leave it as plain text
+                string xhtmlValid;
+                string errors;
+                if (XmlSanitizer.TryMakeXHtml(text, out xhtmlValid, out errors))
                 {
-                    text = xhtmlSanitized;
-                    renderType = DescriptionTextRenderType.Html;
+                    string xhtmlSanitized;
+                    if (XmlSanitizer.SanitizeXml(xhtmlValid, false, false, out xhtmlSanitized, out errors))
+                    {
+                        text = xhtmlSanitized;
+                        renderType = DescriptionTextRenderType.Html;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(errors))
+                {
+                    Logger.Info("Failed to convert message body to HTML. Defaulting to plain text. Conversion message: " + errors);
+                }
+                else if (text.Length > DescriptionLengthMax)
+                {
+                    // Truncate string if too long. IcM limits the number of characters in the DescriptionEntry.Text property.
+                    text = TruncateXml(text, DescriptionLengthMax, maxHyperlinkLength);
                 }
             }
+            else if (text.Length > DescriptionLengthMax)
+            {
+                // Truncate string if too long. IcM limits the number of characters in the DescriptionEntry.Text property.
+                text = text.Substring(0, DescriptionLengthMax);
+                text += TruncationMessage;
+            }
 
-            return new DescriptionEntry
+
+            var descriptionEntry = new DescriptionEntry
             {
                 Cause = DescriptionEntryCause.Created,
                 Date = now,
@@ -353,8 +424,100 @@
                 SubmitDate = now,
                 SubmittedBy = values[FieldNames.Incident.CreatedBy],
                 Text = text,
-                RenderType = renderType
+                RenderType = renderType,
             };
+
+            return descriptionEntry;
+        }
+
+        public static string TruncateXml(string xml, int maxLength, int maxHyperlinkLength)
+        {
+            XmlDocument document = new XmlDocument();
+            document.LoadXml(xml);
+
+            Stack<XmlNode> nodeStack = new Stack<XmlNode>();
+            XmlNode currentNode = document.FirstChild;
+            int accumulatedLength = 0;
+            while (currentNode != null)
+            {
+                if ((currentNode.Name == "a") && (maxHyperlinkLength >= 0) && (currentNode.Attributes != null))
+                {
+                    XmlNode hrefNode = currentNode.Attributes.GetNamedItem("href");
+                    if (hrefNode?.Value != null && (hrefNode.Value.Length > maxHyperlinkLength) && (currentNode.ParentNode != null))
+                    {
+                        XmlNode newNode = document.CreateNode(XmlNodeType.Element, "div", "");
+                        newNode.InnerText = "** Mail2IcM removed hyperlink **";
+                        currentNode.ParentNode.ReplaceChild(newNode, currentNode);
+                        currentNode = newNode;
+                    }
+                }
+
+                int lengthIncrease = currentNode.OuterXml.Length - currentNode.InnerXml.Length;
+                if ((accumulatedLength + lengthIncrease) > maxLength)
+                {
+                    XmlNode nodeToDelete = currentNode;
+
+                    while (nodeStack.Count > 0)
+                    {
+                        currentNode = nodeStack.Pop();
+
+                        while (nodeToDelete != null)
+                        {
+                            XmlNode nextNode = nodeToDelete.NextSibling;
+                            currentNode.RemoveChild(nodeToDelete);
+                            nodeToDelete = nextNode;
+                        }
+
+                        nodeToDelete = currentNode.NextSibling;
+                    }
+
+                    currentNode = currentNode.NextSibling;
+                    continue;
+                }
+
+                accumulatedLength += lengthIncrease;
+
+                XmlNode child = currentNode.FirstChild;
+                if (child != null)
+                {
+                    nodeStack.Push(currentNode);
+                    currentNode = child;
+                    continue;
+                }
+
+                XmlNode sibling = currentNode.NextSibling;
+                if (sibling != null)
+                {
+                    currentNode = sibling;
+                    continue;
+                }
+
+                while ((nodeStack.Count > 0) && (nodeStack.Peek().LastChild == currentNode))
+                {
+                    currentNode = nodeStack.Pop();
+                }
+
+                currentNode = currentNode.NextSibling;
+            }
+
+            if (xml.Length != document.OuterXml.Length)
+            {
+                XmlNode truncateMessageNode = document.CreateNode(XmlNodeType.Element,  "div", "");
+                truncateMessageNode.InnerText = TruncationMessage;
+                document.LastChild.AppendChild(truncateMessageNode);
+            }
+
+            string result;
+            XmlWriterSettings settings = new XmlWriterSettings { OmitXmlDeclaration = true };
+            using (var stringWriter = new StringWriter())
+            using (var xmlWriter = XmlWriter.Create(stringWriter, settings))
+            {
+                document.WriteTo(xmlWriter);
+                xmlWriter.Flush();
+                result = stringWriter.ToString();
+            }
+
+            return result;
         }
     }
 }
